@@ -103,7 +103,8 @@ void CPU_operation(uint8_t CPU_op, uint32_t address, cache_line* line) {
 	switch( MESIF_state ) {
 		case INVALID:
 			if( CPU_op == CPU_READ ) {
-				if( snoop_result == HIT ) MESIF_state = FORWARD;
+				/* Hit goes high when HITM goes high */
+				if( (snoop_result == HIT) || (snoop_result == HITM) ) MESIF_state = FORWARD;
 				else MESIF_state = EXCLUSIVE;
 			}
 			else {
@@ -224,45 +225,43 @@ void other_CPU_operation(uint8_t bus_op, uint32_t address, cache_line* line) {
 /********************************************************************************
 ** DEBUG FUNCTIONS
 *******************************************************************************/
-/* Test I to F */
-void I_to_F(cache_line line) {
-	printf("\nI -> F\n");
-	CPU_operation(CPU_READ, 0x1, &line);
-
+/* Test F states in our CPU */
+void F_CPU(cache_line line) {
+	line.MESIF = FORWARD;
+	
+	/* Test all read conditions in F */
 	printf("\nRead in F, NOHIT\n");
 	CPU_operation(CPU_READ, 0x0, &line);
+	assert( line.MESIF == FORWARD );
 
 	printf("\nRead in F, HIT\n");
 	CPU_operation(CPU_READ, 0x1, &line);
+	assert( line.MESIF == FORWARD );
 
 	printf("\nRead in F, HITM\n");
 	CPU_operation(CPU_READ, 0x2, &line);
+	assert( line.MESIF == FORWARD );
 
-	printf("\nE -> M, NOHIT\n");
+	/* Test F.M with all three hit possibilities */
+	printf("\nF -> M, NOHIT\n");
 	CPU_operation(CPU_WRITE, 0x0, &line);
+	assert( line.MESIF == MODIFIED );
 
-	printf("\nI -> E\n");
-	CPU_operation(CPU_READ, 0x0, &line);
+	line.MESIF = FORWARD;
+	printf("\nF -> M, HIT\n");
+	CPU_operation(CPU_WRITE, 0x0, &line);
+	assert( line.MESIF == MODIFIED );
 
-	printf("\nE -> M, HIT\n");
-	CPU_operation(CPU_WRITE, 0x1, &line);
-
-	printf("\nI -> E\n");
-	CPU_operation(CPU_READ, 0x0, &line);
-
-	printf("\nE -> M, HITM\n");
+	line.MESIF = FORWARD;
+	printf("\nF -> M, HITM\n");
 	CPU_operation(CPU_WRITE, 0x2, &line);
-
-	printf("\nM -> I\n");
-	other_CPU_operation(RWIM, 0x0, &line);
+	assert( line.MESIF == MODIFIED );
 }
 
-/* Test I to E */
-void I_to_E(cache_line line) {
-	printf("\nI -> E\n");
-	CPU_operation(CPU_READ, 0x0, &line);
-	assert( line.MESIF == EXCLUSIVE );
-	
+/* Test E states in our CPU */
+void E_CPU(cache_line line) {
+	line.MESIF = EXCLUSIVE;
+
 	/* Test all read conditions in E */
 	printf("\nRead in E, NOHIT\n");
 	CPU_operation(CPU_READ, 0x0, &line);
@@ -276,43 +275,122 @@ void I_to_E(cache_line line) {
 	CPU_operation(CPU_READ, 0x2, &line);
 	assert( line.MESIF == EXCLUSIVE );
 
-	/* Test E->M NOHIT */
+	/* Test E.M with all three hit possibilities */
 	printf("\nE -> M, NOHIT\n");
 	CPU_operation(CPU_WRITE, 0x0, &line);
 	assert( line.MESIF == MODIFIED );
 
-	printf("\nM -> I\n");
-	other_CPU_operation(RWIM, 0x0, &line);
-	assert( line.MESIF == INVALID );
-
-	/* Test E->M, HIT */
-	printf("\nI -> E\n");
-	CPU_operation(CPU_READ, 0x0, &line);
-	assert( line.MESIF == EXCLUSIVE );
-
+	line.MESIF = EXCLUSIVE;
 	printf("\nE -> M, HIT\n");
 	CPU_operation(CPU_WRITE, 0x1, &line);
 	assert( line.MESIF == MODIFIED );
 
-	printf("\nM -> I\n");
-	other_CPU_operation(RWIM, 0x0, &line);
-	assert( line.MESIF == INVALID );
-
-	/* Test E->M, HITM */
-	printf("\nI -> E\n");
-	CPU_operation(CPU_READ, 0x0, &line);
-	assert( line.MESIF == EXCLUSIVE );
-
+	line.MESIF = EXCLUSIVE;
 	printf("\nE -> M, HITM\n");
 	CPU_operation(CPU_WRITE, 0x2, &line);
 	assert( line.MESIF == MODIFIED );
+}
 
-	printf("\nM -> I\n");
-	other_CPU_operation(RWIM, 0x0, &line);
-	assert( line.MESIF == INVALID );
-}	
+/* Test S states in our CPU */
+void S_CPU(cache_line line) {
+	line.MESIF = SHARED;
 
+	/* Test all read conditions in E */
+	printf("\nRead in S, NOHIT\n");
+	CPU_operation(CPU_READ, 0x0, &line);
+	assert( line.MESIF == SHARED );
 
+	printf("\nRead in S, HIT\n");
+	CPU_operation(CPU_READ, 0x1, &line);
+	assert( line.MESIF == SHARED );
+
+	printf("\nRead in S, HITM\n");
+	CPU_operation(CPU_READ, 0x2, &line);
+	assert( line.MESIF == SHARED );
+
+	/* Test E.M with all three hit possibilities */
+	printf("\nS -> M, NOHIT\n");
+	CPU_operation(CPU_WRITE, 0x0, &line);
+	assert( line.MESIF == MODIFIED );
+
+	line.MESIF = SHARED;
+	printf("\nS -> M, HIT\n");
+	CPU_operation(CPU_WRITE, 0x1, &line);
+	assert( line.MESIF == MODIFIED );
+
+	line.MESIF = SHARED;
+	printf("\nS -> M, HITM\n");
+	CPU_operation(CPU_WRITE, 0x2, &line);
+	assert( line.MESIF == MODIFIED );
+}
+
+/* Test I states in our CPU */
+void I_CPU(cache_line line) {
+	line.MESIF = INVALID;
+
+	/* Check all reads */
+	printf("\nI -> E\n");
+	CPU_operation(CPU_READ, 0x0, &line);
+	assert( line.MESIF == EXCLUSIVE );
+	
+	line.MESIF = INVALID;
+	printf("\nI -> F, HIT\n");
+	CPU_operation(CPU_READ, 0x1, &line);
+	assert( line.MESIF == FORWARD );
+
+	line.MESIF = INVALID;
+	printf("\nI -> F, HITM\n");
+	CPU_operation(CPU_READ, 0x2, &line);
+	assert( line.MESIF == FORWARD );
+
+	/* Check all writes */
+	line.MESIF = INVALID;
+	printf("\nI -> M, NOHIT\n");
+	CPU_operation(CPU_WRITE, 0x0, &line);
+	assert( line.MESIF == MODIFIED );
+
+	line.MESIF = INVALID;
+	printf("\nI -> M, HIT\n");
+	CPU_operation(CPU_WRITE, 0x1, &line);
+	assert( line.MESIF == MODIFIED );
+
+	line.MESIF = INVALID;
+	printf("\nI -> M, HITM\n");
+	CPU_operation(CPU_WRITE, 0x2, &line);
+	assert( line.MESIF == MODIFIED );
+}
+
+/* Test M states in our CPU */
+void M_CPU(cache_line line) {
+	line.MESIF = MODIFIED;
+
+	/* Check all reads */
+	printf("\nREAD in M, NOHIT\n");
+	CPU_operation(CPU_READ, 0x0, &line);
+	assert( line.MESIF == MODIFIED );
+
+	printf("\nREAD in M, HIT\n");
+	CPU_operation(CPU_READ, 0x1, &line);
+	assert( line.MESIF == MODIFIED );
+
+	printf("\nREAD in M, HITM\n");
+	CPU_operation(CPU_READ, 0x2, &line);
+	assert( line.MESIF == MODIFIED );
+	
+	/* Check all writes */
+	printf("\nWRITE in M, NOHIT\n");
+	CPU_operation(CPU_WRITE, 0x0, &line);
+	assert( line.MESIF == MODIFIED );
+
+	printf("\nWRITE in M, HIT\n");
+	CPU_operation(CPU_WRITE, 0x1, &line);
+	assert( line.MESIF == MODIFIED );
+
+	printf("\nWRITE in M, HITM\n");
+	CPU_operation(CPU_WRITE, 0x2, &line);
+	assert( line.MESIF == MODIFIED );	
+}
+	
 /* To test the MESIF functionality by itself */
 int main() {
 	cache_line line;
@@ -321,7 +399,11 @@ int main() {
 	line.tag = 0;
 
 	/* Check our CPU doing operations */
-	I_to_E(line);	
+	F_CPU(line);	
+	E_CPU(line);
+	S_CPU(line);
+	I_CPU(line);
+	M_CPU(line);
 
 	return 0;
 }

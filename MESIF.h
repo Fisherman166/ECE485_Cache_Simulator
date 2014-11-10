@@ -54,7 +54,13 @@ void other_CPU_operation(uint8_t bus_op, uint32_t address, cache_line* line);
 /**************************************************************************
 ** DEBUG FUNCTIONS
 **************************************************************************/
-void I_to_E(cache_line);
+
+/* OUR CPU */
+void F_CPU(cache_line);
+void E_CPU(cache_line);
+void S_CPU(cache_line);
+void I_CPU(cache_line);
+void M_CPU(cache_line);
 
 #endif
 
