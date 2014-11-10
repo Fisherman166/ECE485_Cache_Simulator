@@ -12,15 +12,29 @@
  *****************************************************************************/
 
 #include "MESIF.h"
+#define DEBUG
 
 /* Used to simulate a bus operation and to capture the snoop results of the last
 ** level caches of other processors
 */
 uint8_t bus_operation(uint8_t bus_op, uint32_t address) {
 	uint8_t snoop_result = get_snoop_result(address);
+	char bus_op_text[10];
+	char snoop_text[5];
 
 	#ifndef SLIENT
-	printf("Bus OP: %d, Address: %X, Snoop Result: %d\n", bus_op, address, snoop_result);
+	if( bus_op == READ ) strcpy(bus_op_text, "READ");
+	else if( bus_op == WRITE ) strcpy(bus_op_text, "WRITE");
+	else if( bus_op == INVALIDATE ) strcpy(bus_op_text, "INVALIDATE");
+	else if( bus_op == RWIM ) strcpy(bus_op_text, "RWIM");
+	else strcpy(bus_op_text, "ERROR");
+
+	if( snoop_result == NOHIT ) strcpy(snoop_text, "NOHIT");
+	else if( snoop_result == HIT ) strcpy(snoop_text, "HIT");
+	else if( snoop_result == HITM ) strcpy(snoop_text, "HITM");
+	else strcpy(snoop_text, "ERROR");
+
+	printf("Bus OP: %s, Address: %X, Snoop Result: %s\n", bus_op_text, address, snoop_text);
 	#endif
 
 	return snoop_result;
@@ -50,8 +64,15 @@ uint8_t get_snoop_result(uint32_t address) {
 		
 /* Used to report the result of our snooping bus operations by other caches */
 void put_snoop_result(uint32_t address, uint8_t snoop_result) {
+	char snoop_text[5];
+
 	#ifndef SILENT
-	printf("Address: %X, Snoop Result: %d\n", address, snoop_result);
+	if( snoop_result == NOHIT ) strcpy(snoop_text, "NOHIT");
+	else if( snoop_result == HIT ) strcpy(snoop_text, "HIT");
+	else if( snoop_result == HITM ) strcpy(snoop_text, "HITM");
+	else strcpy(snoop_text, "ERROR");
+
+	printf("Address: %X, Snoop Result: %s\n", address, snoop_text);
 	#endif
 }
 
@@ -62,6 +83,15 @@ void put_snoop_result(uint32_t address, uint8_t snoop_result) {
 void CPU_operation(uint8_t CPU_op, uint32_t address, cache_line* line) {
 	uint8_t snoop_result, bus_op; 
 	uint8_t MESIF_state = line->MESIF;
+
+	#ifdef DEBUG
+	if(MESIF_state == INVALID) printf("Initial MESIF state: INVALID\n");
+	else if(MESIF_state == EXCLUSIVE) printf("Initial MESIF state: EXCLUSIVE\n");
+	else if(MESIF_state == SHARED) printf("Initial MESIF state: SHARED\n");
+	else if(MESIF_state == FORWARD) printf("Initial MESIF state: FORWARD\n");
+	else if(MESIF_state == MODIFIED) printf("Initial MESIF state: MODIFIED\n");
+	else printf("Initial MESIF state: ERROR\n");
+	#endif
 
 	/* Generate the bus operation */
 	if( CPU_op == CPU_READ ) bus_op = READ;
@@ -104,6 +134,15 @@ void CPU_operation(uint8_t CPU_op, uint32_t address, cache_line* line) {
 			break;
 	}
 
+	#ifdef DEBUG
+	if(MESIF_state == INVALID) printf("Modified MESIF state: INVALID\n");
+	else if(MESIF_state == EXCLUSIVE) printf("Modified MESIF state: EXCLUSIVE\n");
+	else if(MESIF_state == SHARED) printf("Modified MESIF state: SHARED\n");
+	else if(MESIF_state == FORWARD) printf("Modified MESIF state: FORWARD\n");
+	else if(MESIF_state == MODIFIED) printf("Modified MESIF state: MODIFIED\n");
+	else printf("Modified MESIF state: ERROR\n");
+	#endif
+
 	line->MESIF = MESIF_state;
 }
 
@@ -113,6 +152,15 @@ void CPU_operation(uint8_t CPU_op, uint32_t address, cache_line* line) {
 void other_CPU_operation(uint8_t bus_op, uint32_t address, cache_line* line) {
 	uint8_t snoop_result;
 	uint8_t MESIF_state = line->MESIF;
+
+	#ifdef DEBUG
+	if(MESIF_state == INVALID) printf("Initial MESIF state: INVALID\n");
+	else if(MESIF_state == EXCLUSIVE) printf("Initial MESIF state: EXCLUSIVE\n");
+	else if(MESIF_state == SHARED) printf("Initial MESIF state: SHARED\n");
+	else if(MESIF_state == FORWARD) printf("Initial MESIF state: FORWARD\n");
+	else if(MESIF_state == MODIFIED) printf("Initial MESIF state: MODIFIED\n");
+	else printf("Initial MESIF state: ERROR\n");
+	#endif
 
 	switch( MESIF_state ) {
 		case INVALID:
@@ -161,5 +209,51 @@ void other_CPU_operation(uint8_t bus_op, uint32_t address, cache_line* line) {
 	}
 
 	put_snoop_result(address, snoop_result);
+
+	#ifdef DEBUG
+	if(MESIF_state == INVALID) printf("Modified MESIF state: INVALID\n");
+	else if(MESIF_state == EXCLUSIVE) printf("Modified MESIF state: EXCLUSIVE\n");
+	else if(MESIF_state == SHARED) printf("Modified MESIF state: SHARED\n");
+	else if(MESIF_state == FORWARD) printf("Modified MESIF state: FORWARD\n");
+	else if(MESIF_state == MODIFIED) printf("Modified MESIF state: MODIFIED\n");
+	else printf("Modified MESIF state: ERROR\n");
+	#endif
+}
+
+
+/* To test the MESIF functionality by itself */
+int main() {
+	cache_line line;
+
+	line.MESIF = INVALID;
+	line.tag = 0;
+
+	/* Check our CPU doing operations */
+	/* I -> E -> M -> I */
+	printf("Invalid to exclusive\n");
+	CPU_operation(CPU_READ, 0x0, &line);
+	printf("\n\n");
+
+	printf("Read in exclusive \n");
+	CPU_operation(CPU_READ, 0x0, &line);
+	printf("\n\n");
+
+	printf("Exclusive to modified \n");
+	CPU_operation(CPU_WRITE, 0x0, &line);
+	printf("\n\n");
+
+	printf("Read in modified\n");
+	CPU_operation(CPU_READ, 0x0, &line);
+	printf("\n\n");
+
+	printf("Write in modified \n");
+	CPU_operation(CPU_WRITE, 0x0, &line);
+	printf("\n\n");
+
+	printf("M -> I\n");
+	other_CPU_operation(RWIM, 0x0, &line);
+	printf("\n\n");
+
+	return 0;
 }
 
