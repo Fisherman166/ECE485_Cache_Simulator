@@ -209,6 +209,7 @@ void other_CPU_operation(uint8_t bus_op, uint32_t address, cache_line* line) {
 	}
 
 	put_snoop_result(address, snoop_result);
+	line->MESIF = MESIF_state;
 
 	#ifdef DEBUG
 	if(MESIF_state == INVALID) printf("Modified MESIF state: INVALID\n");
@@ -220,6 +221,97 @@ void other_CPU_operation(uint8_t bus_op, uint32_t address, cache_line* line) {
 	#endif
 }
 
+/********************************************************************************
+** DEBUG FUNCTIONS
+*******************************************************************************/
+/* Test I to F */
+void I_to_F(cache_line line) {
+	printf("\nI -> F\n");
+	CPU_operation(CPU_READ, 0x1, &line);
+
+	printf("\nRead in F, NOHIT\n");
+	CPU_operation(CPU_READ, 0x0, &line);
+
+	printf("\nRead in F, HIT\n");
+	CPU_operation(CPU_READ, 0x1, &line);
+
+	printf("\nRead in F, HITM\n");
+	CPU_operation(CPU_READ, 0x2, &line);
+
+	printf("\nE -> M, NOHIT\n");
+	CPU_operation(CPU_WRITE, 0x0, &line);
+
+	printf("\nI -> E\n");
+	CPU_operation(CPU_READ, 0x0, &line);
+
+	printf("\nE -> M, HIT\n");
+	CPU_operation(CPU_WRITE, 0x1, &line);
+
+	printf("\nI -> E\n");
+	CPU_operation(CPU_READ, 0x0, &line);
+
+	printf("\nE -> M, HITM\n");
+	CPU_operation(CPU_WRITE, 0x2, &line);
+
+	printf("\nM -> I\n");
+	other_CPU_operation(RWIM, 0x0, &line);
+}
+
+/* Test I to E */
+void I_to_E(cache_line line) {
+	printf("\nI -> E\n");
+	CPU_operation(CPU_READ, 0x0, &line);
+	assert( line.MESIF == EXCLUSIVE );
+	
+	/* Test all read conditions in E */
+	printf("\nRead in E, NOHIT\n");
+	CPU_operation(CPU_READ, 0x0, &line);
+	assert( line.MESIF == EXCLUSIVE );
+
+	printf("\nRead in E, HIT\n");
+	CPU_operation(CPU_READ, 0x1, &line);
+	assert( line.MESIF == EXCLUSIVE );
+
+	printf("\nRead in E, HITM\n");
+	CPU_operation(CPU_READ, 0x2, &line);
+	assert( line.MESIF == EXCLUSIVE );
+
+	/* Test E->M NOHIT */
+	printf("\nE -> M, NOHIT\n");
+	CPU_operation(CPU_WRITE, 0x0, &line);
+	assert( line.MESIF == MODIFIED );
+
+	printf("\nM -> I\n");
+	other_CPU_operation(RWIM, 0x0, &line);
+	assert( line.MESIF == INVALID );
+
+	/* Test E->M, HIT */
+	printf("\nI -> E\n");
+	CPU_operation(CPU_READ, 0x0, &line);
+	assert( line.MESIF == EXCLUSIVE );
+
+	printf("\nE -> M, HIT\n");
+	CPU_operation(CPU_WRITE, 0x1, &line);
+	assert( line.MESIF == MODIFIED );
+
+	printf("\nM -> I\n");
+	other_CPU_operation(RWIM, 0x0, &line);
+	assert( line.MESIF == INVALID );
+
+	/* Test E->M, HITM */
+	printf("\nI -> E\n");
+	CPU_operation(CPU_READ, 0x0, &line);
+	assert( line.MESIF == EXCLUSIVE );
+
+	printf("\nE -> M, HITM\n");
+	CPU_operation(CPU_WRITE, 0x2, &line);
+	assert( line.MESIF == MODIFIED );
+
+	printf("\nM -> I\n");
+	other_CPU_operation(RWIM, 0x0, &line);
+	assert( line.MESIF == INVALID );
+}	
+
 
 /* To test the MESIF functionality by itself */
 int main() {
@@ -229,30 +321,7 @@ int main() {
 	line.tag = 0;
 
 	/* Check our CPU doing operations */
-	/* I -> E -> M -> I */
-	printf("Invalid to exclusive\n");
-	CPU_operation(CPU_READ, 0x0, &line);
-	printf("\n\n");
-
-	printf("Read in exclusive \n");
-	CPU_operation(CPU_READ, 0x0, &line);
-	printf("\n\n");
-
-	printf("Exclusive to modified \n");
-	CPU_operation(CPU_WRITE, 0x0, &line);
-	printf("\n\n");
-
-	printf("Read in modified\n");
-	CPU_operation(CPU_READ, 0x0, &line);
-	printf("\n\n");
-
-	printf("Write in modified \n");
-	CPU_operation(CPU_WRITE, 0x0, &line);
-	printf("\n\n");
-
-	printf("M -> I\n");
-	other_CPU_operation(RWIM, 0x0, &line);
-	printf("\n\n");
+	I_to_E(line);	
 
 	return 0;
 }
