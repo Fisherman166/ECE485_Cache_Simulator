@@ -31,7 +31,7 @@
 /* Used to simulate a bus operation and to capture the snoop results of the last
 ** level caches of other processors
 */
-uint8_t bus_operation(uint8_t bus_op, uint32_t address);
+void bus_operation(uint8_t bus_op, uint32_t address, uint8_t snoop_result);
 
 /* Simulate snoop results from other processors */
 uint8_t get_snoop_result(uint32_t address);
@@ -55,12 +55,19 @@ void other_CPU_operation(uint8_t bus_op, uint32_t address, cache_line* line);
 ** DEBUG FUNCTIONS
 **************************************************************************/
 
-/* OUR CPU */
+/* Our CPU accessing memory */
 void F_CPU(cache_line);
 void E_CPU(cache_line);
 void S_CPU(cache_line);
 void I_CPU(cache_line);
 void M_CPU(cache_line);
+
+/* Our CPU snooping */
+void F_SNOOP(cache_line);
+void E_SNOOP(cache_line);
+void S_SNOOP(cache_line);
+void I_SNOOP(cache_line);
+void M_SNOOP(cache_line);
 
 #endif
 

@@ -25,7 +25,7 @@
 /*BUS OPS:*/
 #define READ 			1
 #define WRITE 			2
-#define INVALIDATE 	3
+#define INVALIDATE 		3
 #define RWIM 			4
 
 /*SNOOP RESULTS:*/
@@ -49,6 +49,8 @@
 typedef struct {
 	uint16_t tag;
 	uint8_t MESIF;
+	uint8_t	last_bus_op;		/* MESIF debug - our CPU accesses memory */
+	uint8_t last_snoop_result;	/* MESIF debug - our CPU snooping - NOHIT, HIT or HITM */
 } cache_line;
 
 /* Holds all variables stored in a set */
