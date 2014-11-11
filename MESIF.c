@@ -571,10 +571,6 @@ void M_SNOOP(cache_line line) {
 	assert( line.MESIF == INVALID );	
 }
 
-
-
-
-	
 /* MESIF unit test - can uncomment for debug */
 int main() {
 	cache_line line;
