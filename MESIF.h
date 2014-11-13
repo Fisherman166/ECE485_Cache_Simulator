@@ -14,8 +14,8 @@
 #include "cache.h"
 #include <string.h>
 
- #ifndef MESIF_H
- #define MESIF_H
+ #ifndef _MESIF_H
+ #define _MESIF_H
 
 /* Define the MESIF states */
 #define INVALID 0
@@ -49,6 +49,9 @@ void CPU_operation(uint8_t CPU_op, uint32_t address, cache_line* line);
 ** access.
 */
 void other_CPU_operation(uint8_t bus_op, uint32_t address, cache_line* line);
+
+/* Used to pass a message to the L2 cache */
+void message_to_L2_cache( uint8_t bus_op, uint32_t address);
 
 
 /**************************************************************************

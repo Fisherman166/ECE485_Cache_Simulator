@@ -247,6 +247,13 @@ void other_CPU_operation(uint8_t bus_op, uint32_t address, cache_line* line) {
 	#endif
 }
 
+/* Used to pass a message to the L2 cache */
+void message_to_L2_cache( uint8_t bus_op, uint32_t address) {
+	#ifndef SILENT
+		printf("L2 bus_op: %d, Address: %X\n", bus_op, address);
+	#endif
+}
+
 /********************************************************************************
 ** DEBUG FUNCTIONS
 *******************************************************************************/

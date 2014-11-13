@@ -17,10 +17,11 @@
 #include <stdint.h>
 #include <assert.h>
 
-#ifndef CACHE_H
-#define CACHE_H
+#ifndef _CACHE_H
+#define _CACHE_H
 
 #define WAYS 16
+#define NUM_SETS 8192
 
 /*BUS OPS:*/
 #define READ 			1
