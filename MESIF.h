@@ -51,7 +51,7 @@ void CPU_operation(uint8_t CPU_op, uint32_t address, cache_line* line);
 void other_CPU_operation(uint8_t bus_op, uint32_t address, cache_line* line);
 
 /* Used to pass a message to the L2 cache */
-void message_to_L2_cache( uint8_t bus_op, uint32_t address);
+void message_to_L2_cache(uint8_t bus_op, uint32_t address);
 
 
 /**************************************************************************

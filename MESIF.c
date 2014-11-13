@@ -182,7 +182,7 @@ void other_CPU_operation(uint8_t bus_op, uint32_t address, cache_line* line) {
 			if( bus_op == RWIM ) {
 				MESIF_state = INVALID;
 				snoop_result = HIT;
-				bus_operation(WRITE, address, 0xFF);
+				bus_operation(WRITE, address, SNOOPING);
 			}
 			else if( bus_op == INVALIDATE ) {
 				MESIF_state = INVALID;
@@ -191,7 +191,7 @@ void other_CPU_operation(uint8_t bus_op, uint32_t address, cache_line* line) {
 			else if( bus_op == READ ) {
 				MESIF_state = SHARED;
 				snoop_result = HIT;
-				bus_operation(WRITE, address, 0xFF);
+				bus_operation(WRITE, address, SNOOPING);
 			}
 			break;
 
@@ -206,7 +206,7 @@ void other_CPU_operation(uint8_t bus_op, uint32_t address, cache_line* line) {
 			if( bus_op == RWIM ) {
 				MESIF_state = INVALID;
 				snoop_result = HIT;
-				bus_operation(WRITE, address, 0xFF);
+				bus_operation(WRITE, address, SNOOPING);
 			}
 			else if( bus_op == INVALIDATE ) {
 				MESIF_state = INVALID;
@@ -215,7 +215,7 @@ void other_CPU_operation(uint8_t bus_op, uint32_t address, cache_line* line) {
 			else if( bus_op == READ ) {
 				MESIF_state = SHARED;
 				snoop_result = HIT;
-				bus_operation(WRITE, address, 0xFF);
+				bus_operation(WRITE, address, SNOOPING);
 			}
 			break;
 
@@ -223,14 +223,19 @@ void other_CPU_operation(uint8_t bus_op, uint32_t address, cache_line* line) {
 			if( (bus_op == RWIM) || (bus_op == INVALIDATE) ) {
 				MESIF_state = INVALID;
 				snoop_result = HITM;
-				bus_operation(WRITE, address, 0xFF);
+				bus_operation(WRITE, address, SNOOPING);
 			}
 			else if( bus_op == READ ) {
 				MESIF_state = SHARED;
 				snoop_result = HITM;
-				bus_operation(WRITE, address, 0xFF);
+				bus_operation(WRITE, address, SNOOPING);
 			}
 			break;
+	}
+
+	/* If MESIF went from something to invalid, we need to tell L2 to invalidate the line */ 
+	if( (line->MESIF != INVALID) && (MESIF_state == INVALID) ) {
+		message_to_L2_cache(INVALIDATE, address);
 	}
 
 	put_snoop_result(address, snoop_result);

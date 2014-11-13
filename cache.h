@@ -28,6 +28,7 @@
 #define WRITE 			2
 #define INVALIDATE 	3
 #define RWIM 			4
+#define SNOOPING		0xFF
 
 /*SNOOP RESULTS:*/
 #define NOHIT 		0
