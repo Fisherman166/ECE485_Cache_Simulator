@@ -20,6 +20,11 @@
 #ifndef _CACHE_H
 #define _CACHE_H
 
+/* Cache size definitions */
+#define ADDRESS_BITS 32
+#define TAG_BITS 13
+#define INDEX_BITS 13
+#define BYTE_SELECT_BITS 6
 #define WAYS 16
 #define NUM_SETS 8192
 

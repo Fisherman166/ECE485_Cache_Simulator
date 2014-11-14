@@ -12,29 +12,17 @@
  * -PSEUDO LRU
  ******************************************************************************
  *****************************************************************************/
-#include<stdio.h>
-#include<stdint.h>
-#include<string.h>
-#include<stdlib.h>
-#include<time.h>
-#include<ctype.h>
+#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
+#include <stdlib.h>
+#include <time.h>
+#include <ctype.h>
 #include "MESIF.h"
 #include "cache.h"
 
 //#define SILENT
-//#define TEST_FILE
-#define WAYS 16
-
-/*BUS OPS:*/
-#define READ 		1
-#define WRITE 		2
-#define INVALIDATE 	3
-#define RWIM 		4
-
-/*SNOOP RESULTS:*/
-#define NOHIT 		0
-#define HIT 		1
-#define HITM 		2
+#define TEST_FILE
 
 /*TRACE RESULTS:*/
 #define READ_DATA_L1  0
@@ -46,9 +34,6 @@
 #define SNOOP_RWI     6
 #define CLEAR_RESET   8
 #define PRINT_STATES  9
-
-#define TAG 9
-#define INDEX 9
 
 /*TRACES: (N ADDRESS)
  *0 READ REQUEST FROM L1 FROM D CACHE
@@ -73,7 +58,13 @@ typedef struct TLINE{
 /* Functions */
 TLINE * get_line(int * index);
 void decode_trace(uint8_t trace_op, uint32_t address, cache_set* set);
-uint32_t check_tag(TLINE * traceline);
+cache_line* check_tags(uint32_t address, cache_set* set);
+
+/* Functions that break down the address */
+uint32_t extract_byte_select(uint32_t address);
+uint32_t extract_index(uint32_t address);
+uint32_t extract_tag(uint32_t address);
+
 
 
 FILE *trace;
@@ -215,15 +206,108 @@ void decode_trace(uint8_t trace_op, uint32_t address, cache_set* set) {
 	**
 	**		and more, I'm just too lazy right now
 	*/
+
+
 }
 
 /******************************************************************************
- * FUNCTION TO CHECK THE TAG BIT
+ * FUNCTION THAT CHECKS FOR A MATCHING TAG WITHIN THE SET
  *****************************************************************************/
-uint32_t check_tag(TLINE * traceline){
+cache_line* check_tags(uint32_t address, cache_set* set) {
+	cache_line* line_pointer;
+	uint32_t tag_mask, tag;
+	uint8_t index, mask_position, shift_amount;
+
+	line_pointer = NULL;
+	shift_amount = ADDRESS_BITS - TAG_BITS;
+	mask_position = ADDRESS_BITS - 1;
+	tag_mask = 0;
+
+	/* Construct tag mask */
+	for(index = 0; index < TAG_BITS; index++) {
+		tag_mask |= 1 << mask_position;
+		mask_position--;
+	}
+
+	tag = (address & tag_mask) >> shift_amount;
+	#ifdef DEBUG
+		printf("in check_tags, TAG = %X\n", tag);
+	#endif
+
+	/* Check the lines in the set for matching tag */
+	
 
 }/*END CHECK TAG BIT*/
 
+
+/******************************************************************************
+ * EXTRACTS THE BYTE SELECT BITS FROM THE ADDRESS
+ *****************************************************************************/
+ uint32_t extract_byte_select(uint32_t address) {
+ 	uint32_t byte_select_bits, byte_select_mask;
+	uint8_t index;
+
+	byte_select_mask = 0;
+
+	/* Generate the byte select mask */
+	for(index = 0; index < BYTE_SELECT_BITS; index++) {
+		byte_select_mask |= 1 << index;
+	}
+
+	/* Extract byte select bits */
+	byte_select_bits = address & byte_select_mask;
+	#ifdef DEBUG
+		printf("Byte select bits = 0x%X\n", byte_select_bits);
+	#endif
+
+	return byte_select_bits;
+}
+
+/******************************************************************************
+ * EXTRACTS THE INDEX BITS FROM THE ADDRESS
+ *****************************************************************************/
+ uint32_t extract_index(uint32_t address) {
+ 	uint32_t index_bits, index_mask;
+	uint8_t index;
+
+	index_mask = 0;
+
+	/* Generate the index mask */
+	for(index = BYTE_SELECT_BITS; index < (BYTE_SELECT_BITS + INDEX_BITS); index++) {
+		index_mask |= 1 << index;
+	}
+
+	/* Extract index bits */
+	index_bits = (address & index_mask) >> BYTE_SELECT_BITS;	//Shift into the LSB
+	#ifdef DEBUG
+		printf("Index bits = 0x%X\n", index_bits);
+	#endif
+
+	return index_bits;
+}
+
+/******************************************************************************
+ * EXTRACTS THE TAG BITS FROM THE ADDRESS
+ *****************************************************************************/
+ uint32_t extract_tag(uint32_t address) {
+ 	uint32_t tag_bits, tag_mask;
+	uint8_t index;
+
+	tag_mask = 0;
+
+	/* Generate the tag mask */
+	for(index = (BYTE_SELECT_BITS + INDEX_BITS); index < ADDRESS_BITS; index++) {
+		tag_mask |= 1 << index;
+	}
+
+	/* Extract tag bits */
+	tag_bits = (address & tag_mask) >> (BYTE_SELECT_BITS + INDEX_BITS);	//Shift into the LSB
+	#ifdef DEBUG
+		printf("Tag bits = 0x%X\n", tag_bits);
+	#endif
+
+	return tag_bits;
+}
 
 /******************************************************************************
  * EOF
