@@ -280,7 +280,7 @@ void F_CPU(cache_line line) {
 	CPU_operation(CPU_READ, 0x2, &line);
 	assert( line.MESIF == FORWARD );
 
-	/* Test F.M with all three hit possibilities */
+	/* Test F -> M with all three hit possibilities */
 	printf("\nF -> M, NOHIT\n");
 	CPU_operation(CPU_WRITE, 0x0, &line);
 	assert( line.MESIF == MODIFIED );
@@ -376,7 +376,7 @@ void I_CPU(cache_line line) {
 	printf("***********************************************************************************\n");
 
 	/* Check all reads */
-	printf("\nI -> E\n");
+	printf("\nI -> E, NOHIT\n");
 	CPU_operation(CPU_READ, 0x0, &line);
 	assert( line.MESIF == EXCLUSIVE );
 	assert( line.last_bus_op == READ );
