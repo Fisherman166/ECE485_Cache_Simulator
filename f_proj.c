@@ -33,7 +33,7 @@
 #define SNOOP_INV     3
 #define SNOOP_READ    4
 #define SNOOP_WRITE   5
-#define SNOOP_RWI     6
+#define SNOOP_RWIM    6
 #define CLEAR_RESET   8
 #define PRINT_STATES  9
 
@@ -103,7 +103,7 @@ int main() {
 		address += 0x01000000;
 	}
 		address -= 0x01000000;
-	decode_trace(READ_DATA_L1, address);
+	decode_trace(SNOOP_INV, address);
 
 	return 0;
 }
@@ -246,7 +246,7 @@ void decode_trace(uint8_t trace_op, uint32_t address) {
 	
 	/* First, check for our CPU or snooping operations */
 	if( trace_op < CLEAR_RESET ) {
-		tag_matched_line = check_tags(tag, indexed_set);	//Will return 0xFF
+		tag_matched_line = check_tags(tag, indexed_set);	//Will return 0xFF if there is no match
 
 		switch( trace_op ) {
 			case READ_DATA_L1:
@@ -259,6 +259,32 @@ void decode_trace(uint8_t trace_op, uint32_t address) {
 
 			case READ_INS_L1:
 				L1_read_or_write(CPU_READ, tag, address, tag_matched_line, indexed_set);
+				break;
+
+			case SNOOP_INV:
+				if(tag_matched_line != no_match) {
+					other_CPU_operation(INVALIDATE, address, &indexed_set->line[tag_matched_line]);
+					indexed_set->valid_ways--;
+				}
+				break;
+
+			case SNOOP_READ:
+				if(tag_matched_line != no_match) {
+					other_CPU_operation(READ, address, &indexed_set->line[tag_matched_line]);
+				}
+				break;
+
+			case SNOOP_WRITE:
+				if(tag_matched_line != no_match) {
+					other_CPU_operation(WRITE, address, &indexed_set->line[tag_matched_line]);
+				}
+				break;
+
+			case SNOOP_RWIM:
+				if(tag_matched_line != no_match) {
+					other_CPU_operation(RWIM, address, &indexed_set->line[tag_matched_line]);
+					indexed_set->valid_ways--;
+				}
 				break;
 		}//End switch
 	} //End if
