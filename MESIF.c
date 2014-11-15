@@ -182,15 +182,19 @@ void other_CPU_operation(uint8_t bus_op, uint32_t address, cache_line* line) {
 			if( bus_op == RWIM ) {
 				MESIF_state = INVALID;
 				snoop_result = HIT;
+				message_to_L2_cache(READ, address);	/* Update our value in cache before we forward */
 				bus_operation(WRITE, address, SNOOPING);
+				message_to_L2_cache(INVALIDATE, address);
 			}
 			else if( bus_op == INVALIDATE ) {
 				MESIF_state = INVALID;
 				snoop_result = NOHIT;
+				message_to_L2_cache(INVALIDATE, address);	
 			}
 			else if( bus_op == READ ) {
 				MESIF_state = SHARED;
 				snoop_result = HIT;
+				message_to_L2_cache(READ, address);	/* Update our value in cache before we forward */
 				bus_operation(WRITE, address, SNOOPING);
 			}
 			break;
@@ -199,6 +203,7 @@ void other_CPU_operation(uint8_t bus_op, uint32_t address, cache_line* line) {
 			snoop_result = HIT;
 			if( (bus_op == RWIM) || (bus_op == INVALIDATE) ) {
 				MESIF_state = INVALID;
+				message_to_L2_cache(INVALIDATE, address);	
 			}
 			break;
 
@@ -206,15 +211,19 @@ void other_CPU_operation(uint8_t bus_op, uint32_t address, cache_line* line) {
 			if( bus_op == RWIM ) {
 				MESIF_state = INVALID;
 				snoop_result = HIT;
+				message_to_L2_cache(READ, address);	
 				bus_operation(WRITE, address, SNOOPING);
+				message_to_L2_cache(INVALIDATE, address);	
 			}
 			else if( bus_op == INVALIDATE ) {
 				MESIF_state = INVALID;
 				snoop_result = NOHIT;
+				message_to_L2_cache(INVALIDATE, address);	
 			}
 			else if( bus_op == READ ) {
 				MESIF_state = SHARED;
 				snoop_result = HIT;
+				message_to_L2_cache(READ, address);	
 				bus_operation(WRITE, address, SNOOPING);
 			}
 			break;
@@ -223,19 +232,17 @@ void other_CPU_operation(uint8_t bus_op, uint32_t address, cache_line* line) {
 			if( (bus_op == RWIM) || (bus_op == INVALIDATE) ) {
 				MESIF_state = INVALID;
 				snoop_result = HITM;
+				message_to_L2_cache(READ, address);	
 				bus_operation(WRITE, address, SNOOPING);
+				message_to_L2_cache(INVALIDATE, address);	
 			}
 			else if( bus_op == READ ) {
 				MESIF_state = SHARED;
 				snoop_result = HITM;
+				message_to_L2_cache(READ, address);	
 				bus_operation(WRITE, address, SNOOPING);
 			}
 			break;
-	}
-
-	/* If MESIF went from something to invalid, we need to tell L2 to invalidate the line */ 
-	if( (line->MESIF != INVALID) && (MESIF_state == INVALID) ) {
-		message_to_L2_cache(INVALIDATE, address);
 	}
 
 	put_snoop_result(address, snoop_result);
@@ -254,8 +261,16 @@ void other_CPU_operation(uint8_t bus_op, uint32_t address, cache_line* line) {
 
 /* Used to pass a message to the L2 cache */
 void message_to_L2_cache( uint8_t bus_op, uint32_t address) {
-	#ifndef SILENT
-		printf("L2 bus_op: %d, Address: %X\n", bus_op, address);
+	char bus_op_text[10];
+
+	#ifndef SLIENT
+		if( bus_op == READ ) strcpy(bus_op_text, "READ");
+		else if( bus_op == WRITE ) strcpy(bus_op_text, "WRITE");
+		else if( bus_op == INVALIDATE ) strcpy(bus_op_text, "INVALIDATE");
+		else if( bus_op == RWIM ) strcpy(bus_op_text, "RWIM");
+		else strcpy(bus_op_text, "ERROR");
+
+		printf("L2 bus_op: %s, Address: %X\n", bus_op_text, address);
 	#endif
 }
 
@@ -584,32 +599,32 @@ void M_SNOOP(cache_line line) {
 }
 
 /* MESIF unit test - can uncomment for debug */
-int main() {
-	cache_line line;
-
-	line.MESIF = INVALID;
-	line.tag = 0;
-
-	/* Check our CPU doing operations */
-	printf("***********************************************************************************\n");
-	printf("Our CPU accessing memory\n");
-	printf("***********************************************************************************\n");
-	F_CPU(line);	
-	E_CPU(line);
-	S_CPU(line);
-	I_CPU(line);
-	M_CPU(line);
-
-	/* Check us snooping other CPUs */
-	printf("\n\n***********************************************************************************\n");
-	printf("Our CPU snooping\n");
-	printf("***********************************************************************************\n");
-	F_SNOOP(line);	
-	E_SNOOP(line);
-	S_SNOOP(line);
-	I_SNOOP(line);
-	M_SNOOP(line);
-
-	return 0;
-}
+//int main() {
+//	cache_line line;
+//
+//	line.MESIF = INVALID;
+//	line.tag = 0;
+//
+//	/* Check our CPU doing operations */
+//	printf("***********************************************************************************\n");
+//	printf("Our CPU accessing memory\n");
+//	printf("***********************************************************************************\n");
+//	F_CPU(line);	
+//	E_CPU(line);
+//	S_CPU(line);
+//	I_CPU(line);
+//	M_CPU(line);
+//
+//	/* Check us snooping other CPUs */
+//	printf("\n\n***********************************************************************************\n");
+//	printf("Our CPU snooping\n");
+//	printf("***********************************************************************************\n");
+//	F_SNOOP(line);	
+//	E_SNOOP(line);
+//	S_SNOOP(line);
+//	I_SNOOP(line);
+//	M_SNOOP(line);
+//
+//	return 0;
+//}
 
