@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <assert.h>
+#include <string.h>
 
 #ifndef _CACHE_H
 #define _CACHE_H

@@ -12,7 +12,6 @@
  *****************************************************************************/
 
 #include "cache.h"
-#include <string.h>
 
  #ifndef _MESIF_H
  #define _MESIF_H
