@@ -20,6 +20,7 @@
 #include <ctype.h>
 #include "MESIF.h"
 #include "cache.h"
+#include "LRU.h"
 
 //#define SILENT
 #define TEST_FILE
@@ -58,46 +59,47 @@ typedef struct TLINE{
 
 /* Functions */
 TLINE * get_line(int * index);
-void decode_trace(uint8_t trace_op, uint32_t address, cache_set* set);
-cache_line* check_tags(uint16_t tag, cache_set* set);
+void decode_trace(uint8_t trace_op, uint32_t address);
+uint8_t check_tags(uint16_t tag, cache_set* set);
+void fill_invalid_line(uint8_t CPU_op, uint16_t tag, uint32_t address, cache_set* set);
+void fill_valid_line(uint8_t CPU_op, uint16_t tag, uint32_t address, cache_set* set);
 
 /* Functions that break down the address */
 uint8_t extract_byte_select(uint32_t address);
 uint16_t extract_index(uint32_t address);
 uint16_t extract_tag(uint32_t address);
 
+/* Global values */
 FILE *trace;
 TLINE trace_line;
+cache_set sets[NUM_SETS];	//8k sets in the cache - see cache.h
 
 ///* Sean's test main */
 //int main() {
-//	uint32_t address = 0x6F680000;
-//	uint16_t index, tag;
-//	uint8_t byte, i;
-//	cache_set set;
-//	cache_line* found_line;
+//	uint32_t address = 0x60680000;
+//	int set_index, line_index;
 //
-//	/* Init all lines */
-//	for(i = 0; i < WAYS; i++) {
-//		set.line[i].MESIF = INVALID;
+//	/*INITIALIZE CACHE ARRAY*/
+//	for(set_index = 0; set_index < NUM_SETS; set_index++) {
+//		for(line_index = 0; line_index < WAYS; line_index++){
+//			sets[set_index].psuedo_LRU = 0;
+//			sets[set_index].valid_ways = 0;
+//
+//			/* Init values in each line */
+//			sets[set_index].line[line_index].tag = 0;
+//			sets[set_index].line[line_index].MESIF = INVALID;
+//
+//		}/*END INNER FOR*/
+//
+//	}/*END OUTER FOR*/
+//
+//	for(set_index = 0; set_index < 20; set_index++) {
+//		decode_trace(READ_DATA_L1, address);
+//		printf("Lines = %d\n\n", sets[0].valid_ways);
+//		address += 0x01000000;
 //	}
-//
-//	set.line[4].tag = 0xDED;
-//	set.line[4].MESIF = SHARED;
-//
-//	byte = extract_byte_select(address);
-//	index = extract_index(address);
-//	tag = extract_tag(address);
-//
-//	found_line = check_tags(tag, &set);
-//	
-//	if(found_line == NULL) {
-//		printf("Tag not found\n");
-//	}
-//	else {
-//		printf("Tag of found line = 0x%X\n", found_line->tag);
-//		printf("MESIF state of found line = %d\n", found_line->MESIF);
-//	}
+//		address -= 0x01000000;
+//	decode_trace(READ_DATA_L1, address);
 //
 //	return 0;
 //}
@@ -119,8 +121,6 @@ int main (int argc, char * argv[])
 	char * SnoopResult;
 	uint32_t Address;
 
-	/* Added by Sean */
-	cache_set sets[NUM_SETS];	//8k sets in the cache - see cache.h
 	int set_index, line_index;
 
 	time_t t;
@@ -219,44 +219,69 @@ volatile int bufx=0;
 return &trace_line;
 }/**END GET LINE*/
 
+
+
+
 /******************************************************************************
 * FUNCTION TO DECODE TRACE OPERATION
 ******************************************************************************/
 
-/* Send in the trace op, the address, and the set that the address indexes to */
-void decode_trace(uint8_t trace_op, uint32_t address, cache_set* set) {
-	/* psuedo code for this part
-	**
-	** if(trace = 0-6) {
-	**		check cache lines for tag match
-	**		if tags match and L1 read
-	**			call CPU_operation(CPU_READ, address, &set->line[index]);
-	**		if tags match and L1 write
-	**			call CPU_operation(CPU_WRITE, address, &set->line[index];
-	**		if tags match and snoop from other cache
-	**			call other_CPU_operation(bus_op, address, &set->line[index];
-	**
-	**		and more, I'm just too lazy right now
-	*/
+/* Send in the trace op and the address */
+void decode_trace(uint8_t trace_op, uint32_t address) {
+	const uint8_t no_match = 0xFF;
+	uint16_t index, tag;
+	uint8_t byte_select, line_filled;
+	cache_set* indexed_set;
+	uint8_t tag_matched_line;
 
+	/* Decode the address */
+	byte_select = extract_byte_select(address);
+	index = extract_index(address);
+	tag = extract_tag(address);
 
+	/* Decode the trace operation */
+	indexed_set = &sets[index];
+	
+	/* First, check for our CPU or snooping operations */
+	if( trace_op < CLEAR_RESET ) {
+		tag_matched_line = check_tags(tag, indexed_set);	//Will return 0xFF
+
+		switch( trace_op ) {
+			case READ_DATA_L1:
+
+				if( tag_matched_line == no_match ) {	/* Not in the cache already */
+					if( indexed_set-> valid_ways < WAYS) { /* There is an invalid line */
+						fill_invalid_line(CPU_READ, tag, address, indexed_set);
+						printf("IN FILL_INVALID\n");
+					}
+					else { /* All lines are currently valid */
+						fill_valid_line(CPU_READ, tag, address, indexed_set);
+						printf("IN FILL_VALID\n");
+					}
+				}
+				else {	/* In the cache already */
+					indexed_set->psuedo_LRU = update_LRU(tag_matched_line, indexed_set->psuedo_LRU);
+					CPU_operation(CPU_READ, tag, &indexed_set->line[tag_matched_line]);
+						printf("IN CACHE\n");
+				}
+				break;
+		}//End switch
+	} //End if
 }
 
 /******************************************************************************
  * FUNCTION THAT CHECKS FOR A MATCHING TAG WITHIN THE SET
- * RETURNS NULL IF NO TAG MATCHES IN THE SET
+ * RETURNS 0xFF IF NO TAG MATCHES
  *****************************************************************************/
-cache_line* check_tags(uint16_t tag, cache_set* set) {
-	cache_line* line_pointer;
+uint8_t check_tags(uint16_t tag, cache_set* set) {
 	uint8_t index;
-
-	line_pointer = NULL;
+	uint8_t match_index = 0xFF;
 
 	/* Check the lines in the set for matching tag */
 	for(index = 0; index < WAYS; index++) {
 		if( set->line[index].MESIF != INVALID) {
 			if( tag == set->line[index].tag ) {
-				line_pointer = &set->line[index];
+				match_index = index;
 				#ifdef DEBUG
 					printf("Tag 0x%X found at index %d\n", tag, index);
 				#endif
@@ -265,9 +290,54 @@ cache_line* check_tags(uint16_t tag, cache_set* set) {
 		}
 	}
 
-	return line_pointer;
+	return match_index;
 }/*END CHECK TAG BIT*/
 
+
+/******************************************************************************
+ * FUNCTION THAT FILLS AN INVALID CACHE LINE
+ * HANDLE UPDATING MESIF and PLRU in here as well
+ *****************************************************************************/
+void fill_invalid_line(uint8_t CPU_op, uint16_t tag, uint32_t address, cache_set* set) {
+	uint8_t line_filled;
+	uint8_t line_index;
+
+	/* Replace TAG in an invalid line */
+	for(line_index = 0; line_index < WAYS; line_index++) {
+		if( set->line[line_index].MESIF == INVALID ) {
+			set->line[line_index].tag = tag;
+			set->valid_ways++;
+			line_filled = line_index;
+			break;
+		}
+	}
+
+	/* Update the LRU bits and MESIF state */
+	set->psuedo_LRU = update_LRU(line_filled, set->psuedo_LRU);
+	CPU_operation(CPU_op, address, &set->line[line_index]);
+}
+
+/******************************************************************************
+ * FUNCTION THAT FILLS A LINE WHEN ALL LINES ARE VALID
+ * HANDLE UPDATING MESIF and PLRU in here as well
+ *****************************************************************************/
+void fill_valid_line(uint8_t CPU_op, uint16_t tag, uint32_t address, cache_set* set) {
+	uint8_t line_to_evict;
+
+	/* Find the line to evict and change the MESIF state to INVALID */
+	line_to_evict = LeastUsed(set->psuedo_LRU);
+	set->line[line_to_evict].MESIF = INVALID;
+	#ifdef DEBUG
+		printf("Index of line to evict = %d\n", line_to_evict);
+	#endif
+
+	/* Update the tag */
+	set->line[line_to_evict].tag = tag;
+
+	/* Update the LRU bits and MESIF state */
+	set->psuedo_LRU = update_LRU(line_to_evict, set->psuedo_LRU);
+	CPU_operation(CPU_op, address, &set->line[line_to_evict]);
+}
 
 /******************************************************************************
  * EXTRACTS THE BYTE SELECT BITS FROM THE ADDRESS
