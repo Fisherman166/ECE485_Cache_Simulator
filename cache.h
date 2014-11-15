@@ -20,6 +20,12 @@
 #ifndef _CACHE_H
 #define _CACHE_H
 
+/* General defines for all functions */
+//#define SILENT
+#define TEST_FILE
+#define DEBUG
+#define PRETTY_OUTPUT
+
 /* Cache size definitions */
 #define ADDRESS_BITS 32
 #define TAG_BITS 13
