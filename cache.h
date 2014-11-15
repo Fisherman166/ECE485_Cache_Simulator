@@ -14,9 +14,11 @@
  *****************************************************************************/
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <assert.h>
 #include <string.h>
+#include <time.h>
 
 #ifndef _CACHE_H
 #define _CACHE_H
@@ -46,18 +48,6 @@
 #define NOHIT 		0
 #define HIT 		1
 #define HITM 		2
-
-/*TRACES: (N ADDRESS)
- *0 READ REQUEST FROM L1 FROM D CACHE
- *1 WRITE REQUEST FROM L1 FROM D CACHE
- *2 READ REQUSET FROM L1 INSTRUCTION CACHE
- *3 SNOOPED INVCALIDATE COMMAND
- *4 SNOOPED READ REQUEST
- *5 SNOOPED WRITE REQUEST
- *6 SNOOPED RFO
- *8 CLEAR CACHE AND RESET STATE (FLUSH OR EOF)
- *9 PRINT CONTENTS AND STATE OF EACH VALID LINE
- */
 
 /* Holds all variables stored in a cache line */
 typedef struct {

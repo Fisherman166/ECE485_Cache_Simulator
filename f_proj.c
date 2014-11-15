@@ -12,12 +12,6 @@
  * -PSEUDO LRU
  ******************************************************************************
  *****************************************************************************/
-#include <stdio.h>
-#include <stdint.h>
-#include <string.h>
-#include <stdlib.h>
-#include <time.h>
-#include <ctype.h>
 #include "MESIF.h"
 #include "cache.h"
 #include "LRU.h"
@@ -45,16 +39,12 @@
  *9 PRINT CONTENTS AND STATE OF EACH VALID LINE
  */
 
-typedef struct TLINE{
-	char * snooped;
-	char * address;
-	int * index;
-	int * dec_addr;
-	uint8_t  dec_op;
-}TLINE;
+typedef struct {
+	uint8_t operation;
+	uint32_t address;
+} trace_line;
 
 /* Trace related functions */
-TLINE * get_line(int * index);
 void decode_trace(uint8_t trace_op, uint32_t address);
 uint8_t check_tags(uint16_t tag, cache_set* set);
 void reset_cache(void);
@@ -72,8 +62,6 @@ uint16_t extract_index(uint32_t address);
 uint16_t extract_tag(uint32_t address);
 
 /* Global values */
-FILE *trace;
-TLINE trace_line;
 cache_set sets[NUM_SETS];	//8k sets in the cache - see cache.h
 
 /* Cache statistics */
@@ -81,43 +69,6 @@ static uint32_t cache_reads;
 static uint32_t cache_writes;
 static uint32_t cache_hits;
 static uint32_t cache_misses;
-
-/* Sean's test main */
-//int main() {
-//	uint32_t address = 0x60680000;
-//	int set_index;
-//
-//	reset_cache();
-//
-//	/* I->F->S->M->I */
-//	/*decode_trace(READ_DATA_L1, address + 1);
-//	printf("\n\n");
-//	decode_trace(SNOOP_READ, address);
-//	printf("\n\n");
-//	decode_trace(WRITE_DATA_L1, address);
-//	printf("\n\n");
-//	decode_trace(SNOOP_RWIM, address);
-//	printf("\n\n");*/
-//
-//	
-//	for(set_index = 0; set_index < 20; set_index++) {
-//		decode_trace(WRITE_DATA_L1, address);
-//		printf("Lines = %d\n\n", sets[0].valid_ways);
-//		address += 0x01000000;
-//	}
-//		address -= 0x01000000;
-//	decode_trace(READ_DATA_L1, address);
-//
-//	decode_trace(PRINT_STATES, address);
-//	printf("\n\n");
-//	decode_trace(CLEAR_RESET, address);
-//	printf("\n\n");
-//	decode_trace(PRINT_STATES, address);
-//	printf("\n\n");
-//
-//	print_statistics();
-//	return 0;
-//}
 
 /******************************************************************************
  * 	MAIN LOOP: 
@@ -129,110 +80,81 @@ static uint32_t cache_misses;
 
 int main (int argc, char * argv[])
 {
-	int index=0;
-	int bufx=2;
-	//char * next_line;
-	TLINE * next_line;
-	char * SnoopResult;
-	uint32_t Address;
-
-	int set_index, line_index;
-
+	const uint8_t buffer_len = 20;
+	FILE *trace_file;
+	trace_line trace;
 	time_t t;
 	srand(time(&t));
+	char buffer[buffer_len];
+	char *operation_ptr, *address_ptr;
+	char operation_text[30];
 
 	#ifdef TEST_FILE
 		if(argc>1){
-			trace = fopen(argv[1], "r");
+			trace_file = fopen(argv[1], "r");
 		}else{
 			printf("\nplease specify trace file: \"./a.out <file name> \"\n\n");
 			exit(-1);
 		}
 	#else
-		trace = fopen("cc1.din", "r");
+		trace_file = fopen("cc1.din", "r");
 	#endif
-		/*INITIALIZE CACHE ARRAY*/
-		for(set_index = 0; set_index < NUM_SETS; set_index++) {
-			for(line_index = 0; line_index < WAYS; line_index++){
-				sets[set_index].psuedo_LRU = 0;
-				sets[set_index].valid_ways = 0;
 
-				/* Init values in each line */
-				sets[set_index].line[line_index].tag = 0;
-				sets[set_index].line[line_index].MESIF = INVALID;
+	if(trace_file == NULL) {
+		printf("Could not open the specified file\n");
+		exit(-1);
+	}
 
-				#ifdef WARM_CACHE
-					sets[set_index].line[line_index].MESIF = (rand()%4);
-					sets[set_index].line[line_index].tag = (rand()%exp(16,32));
-				#endif
-			}/*END INNER FOR*/
+	reset_cache();
 
-		}/*END OUTER FOR*/
+//	#ifdef WARM_CACHE
+//				sets[set_index].line[line_index].MESIF = (rand()%4);
+//				sets[set_index].line[line_index].tag = (rand()%exp(16,32));
+//	#endif
 
-		if(trace == NULL){ 		/*FILE FAILED TO OPEN*/
-			printf("UNABLE TO OPEN FILE\n");
-			exit(-1); 		/*EXIT WITH ERROR*/
-		}else printf("FILE opened successfully!\n");
+	/* Get and decode each operation in the trace file */
+	while( fgets(buffer, buffer_len, trace_file) != NULL ) {
+		if( feof(trace_file) ) { /* EOF has been reached */
+			break;
+		}
+		else {
+			operation_ptr = strtok(buffer, " ");	//Look for the space
+			address_ptr = operation_ptr + 2;	//The address is two characters higher
 
-		do{ 	/*DONT WANT TO CHECK PRIOR TO */
-			next_line = get_line(&index);	
-			++index;
+			trace.operation = (uint8_t)atoi(operation_ptr);
+			trace.address = (uint32_t)strtol(address_ptr, NULL, 16);	//Convert hex string to int
+
+			#ifdef DEBUG
+			#ifdef PRETTY_OUTPUT
+				if(trace.operation == READ_DATA_L1) strcpy(operation_text, "READ_DATA_L1");
+				else if(trace.operation == WRITE_DATA_L1) strcpy(operation_text, "WRITE_DATA_L1");
+				else if(trace.operation == READ_INS_L1) strcpy(operation_text, "READ_INS_L1");
+				else if(trace.operation == SNOOP_INV) strcpy(operation_text, "SNOOP_INV");
+				else if(trace.operation == SNOOP_READ) strcpy(operation_text, "SNOOP_READ");
+				else if(trace.operation == SNOOP_WRITE) strcpy(operation_text, "SNOOP_WRITE");
+				else if(trace.operation == SNOOP_RWIM) strcpy(operation_text, "SNOOP_RWIM");
+				else if(trace.operation == CLEAR_RESET) strcpy(operation_text, "CLEAR_RESET");
+				else if(trace.operation == PRINT_STATES) strcpy(operation_text, "PRINT_STATES");
+				else strcpy(operation_text, "ERROR");
+				printf("Trace op = %s, Trace address = 0x%X\n", operation_text, trace.address);
+			#else
+				printf("Trace op = %d, Trace address = 0x%X\n", trace.operation, trace.address);
+			#endif
+			#endif
+
+			decode_trace(trace.operation, trace.address);
+			#ifdef DEBUG
+				printf("\n");
+			#endif			
+		}
+	}
+
+	/* Cleanup */
+	fclose(trace_file);
+	print_statistics();
 		
-			#ifndef SILENT
-				printf("CONTROL: %c\n", next_line->snooped[0]);	
-				printf("STRING RESULT from MAIN: %s\n", next_line->snooped);	
-				printf("MAIN next_line->address: %s\n", next_line->address);
-			#endif
-		//	while((bufx < strlen(next_line->snooped)) && isalnum(next_line->snooped[bufx])){
-		//		next_line->address[bufx] = next_line->snooped[bufx];
-		//	printf("MAIN next_line->address[bufx]: %c\n", next_line->address[bufx]);
-		//	++bufx;
-		//	}
-			//sscanf(next_line->address, "%s", &next_line->dec_addr);
-			//next_line->dec_addr = (long int)strtol(next_line->address, NULL, 0);
-			#ifndef SILENT
-			//	printf("decoded address: 0x%x\n",next_line->dec_addr);
-			#endif
-			
-			//trace_line.dec_op = GetSnoopResult(next_line);
-			//check_tag(next_line);
-			//BusOperation(next_line->snooped[0], *next_line->dec_addr);	
-
-		}while(*next_line->snooped != EOF);
 	return 0;
 }/*END MAIN*/
-
-/******************************************************************************
- * USED TO GET NEXT LINE FROM TRACE FILE 
- * FIRST SINGLE DIGIT (COLUMN 0) IS BUS OP
- * REMAINDER OF TRACE FILE  ENTRY IS ADDRESS
- *****************************************************************************/
-TLINE * get_line(int * index) {
-char next_char;
-char buffer[11];
-volatile int bufx=0;
-
-#ifndef SILENT
-	printf("line index: %d\n", *index);
-#endif
-	for(bufx; bufx<strlen(buffer); ++bufx) buffer[bufx]='Z';
-	bufx=0;	
-	do{ 	buffer[bufx] = fgetc(trace);
-		++bufx;
-	}while((buffer[bufx-1] != '\n') && (bufx<10));
-	
-	trace_line.snooped = (char*)malloc((sizeof(char)*(strlen(buffer))+1));
-	strcpy(trace_line.snooped, buffer);
-	for(bufx=0; bufx<strlen(buffer); ++bufx) buffer[bufx]='Z';
-	bufx=0;
-	do{	buffer[bufx] = trace_line.snooped[bufx+2];
-		++bufx;
-	}while(isalnum(buffer[bufx]));
-	
-	trace_line.address = (char*)malloc((sizeof(char)*(strlen(buffer))-2));
-	strcpy(trace_line.address, buffer);
-return &trace_line;
-}/**END GET LINE*/
 
 
 /******************************************************************************
@@ -324,7 +246,7 @@ uint8_t check_tags(uint16_t tag, cache_set* set) {
 			if( tag == set->line[index].tag ) {
 				match_index = index;
 				#ifdef DEBUG
-					printf("Tag 0x%X found at index %d\n", tag, index);
+					printf("Tag 0x%X found at line %d\n", tag, index);
 				#endif
 				break;
 			}
@@ -363,7 +285,7 @@ void print_cache(void) {
 	uint8_t MESIF_state;
 
 	printf("\n/****************************************************************\n");
-	printf("** PRITING VALID LINES IN CACHE\n");
+	printf("** PRINTING VALID LINES IN CACHE\n");
 	printf("*****************************************************************/\n");
 
 	for(set_index = 0; set_index < NUM_SETS; set_index++) {
@@ -379,9 +301,9 @@ void print_cache(void) {
 				else if(MESIF_state == MODIFIED) strcpy(MESIF_text, "MODIFED");
 				else strcpy(MESIF_text, "ERROR");
 				
-				printf("Set number: %d, Line number: %d, MESIF state: %s, Tag bits: 0x%X\n", set_index, line_index, MESIF_text, tag_bits);
+				printf("Set number: 0x%X, Line number: %d, MESIF state: %s, Tag bits: 0x%X\n", set_index, line_index, MESIF_text, tag_bits);
 				#else
-				printf("Set number: %d, Line number: %d, MESIF state: %d, Tag bits: 0x%X\n", set_index, line_index, MESIF_state, tag_bits);
+				printf("Set number: 0x%X, Line number: %d, MESIF state: %d, Tag bits: 0x%X\n", set_index, line_index, MESIF_state, tag_bits);
 				#endif
 			}
 		} //End inner for
