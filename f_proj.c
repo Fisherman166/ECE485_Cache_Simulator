@@ -23,6 +23,7 @@
 
 //#define SILENT
 #define TEST_FILE
+#define DEBUG
 
 /*TRACE RESULTS:*/
 #define READ_DATA_L1  0
@@ -58,17 +59,48 @@ typedef struct TLINE{
 /* Functions */
 TLINE * get_line(int * index);
 void decode_trace(uint8_t trace_op, uint32_t address, cache_set* set);
-cache_line* check_tags(uint32_t address, cache_set* set);
+cache_line* check_tags(uint16_t tag, cache_set* set);
 
 /* Functions that break down the address */
-uint32_t extract_byte_select(uint32_t address);
-uint32_t extract_index(uint32_t address);
-uint32_t extract_tag(uint32_t address);
-
-
+uint8_t extract_byte_select(uint32_t address);
+uint16_t extract_index(uint32_t address);
+uint16_t extract_tag(uint32_t address);
 
 FILE *trace;
 TLINE trace_line;
+
+///* Sean's test main */
+//int main() {
+//	uint32_t address = 0x6F680000;
+//	uint16_t index, tag;
+//	uint8_t byte, i;
+//	cache_set set;
+//	cache_line* found_line;
+//
+//	/* Init all lines */
+//	for(i = 0; i < WAYS; i++) {
+//		set.line[i].MESIF = INVALID;
+//	}
+//
+//	set.line[4].tag = 0xDED;
+//	set.line[4].MESIF = SHARED;
+//
+//	byte = extract_byte_select(address);
+//	index = extract_index(address);
+//	tag = extract_tag(address);
+//
+//	found_line = check_tags(tag, &set);
+//	
+//	if(found_line == NULL) {
+//		printf("Tag not found\n");
+//	}
+//	else {
+//		printf("Tag of found line = 0x%X\n", found_line->tag);
+//		printf("MESIF state of found line = %d\n", found_line->MESIF);
+//	}
+//
+//	return 0;
+//}
 
 /******************************************************************************
  * 	MAIN LOOP: 
@@ -212,39 +244,37 @@ void decode_trace(uint8_t trace_op, uint32_t address, cache_set* set) {
 
 /******************************************************************************
  * FUNCTION THAT CHECKS FOR A MATCHING TAG WITHIN THE SET
+ * RETURNS NULL IF NO TAG MATCHES IN THE SET
  *****************************************************************************/
-cache_line* check_tags(uint32_t address, cache_set* set) {
+cache_line* check_tags(uint16_t tag, cache_set* set) {
 	cache_line* line_pointer;
-	uint32_t tag_mask, tag;
-	uint8_t index, mask_position, shift_amount;
+	uint8_t index;
 
 	line_pointer = NULL;
-	shift_amount = ADDRESS_BITS - TAG_BITS;
-	mask_position = ADDRESS_BITS - 1;
-	tag_mask = 0;
-
-	/* Construct tag mask */
-	for(index = 0; index < TAG_BITS; index++) {
-		tag_mask |= 1 << mask_position;
-		mask_position--;
-	}
-
-	tag = (address & tag_mask) >> shift_amount;
-	#ifdef DEBUG
-		printf("in check_tags, TAG = %X\n", tag);
-	#endif
 
 	/* Check the lines in the set for matching tag */
-	
+	for(index = 0; index < WAYS; index++) {
+		if( set->line[index].MESIF != INVALID) {
+			if( tag == set->line[index].tag ) {
+				line_pointer = &set->line[index];
+				#ifdef DEBUG
+					printf("Tag 0x%X found at index %d\n", tag, index);
+				#endif
+				break;
+			}
+		}
+	}
 
+	return line_pointer;
 }/*END CHECK TAG BIT*/
 
 
 /******************************************************************************
  * EXTRACTS THE BYTE SELECT BITS FROM THE ADDRESS
  *****************************************************************************/
- uint32_t extract_byte_select(uint32_t address) {
- 	uint32_t byte_select_bits, byte_select_mask;
+ uint8_t extract_byte_select(uint32_t address) {
+	uint32_t byte_select_mask;
+ 	uint8_t byte_select_bits;
 	uint8_t index;
 
 	byte_select_mask = 0;
@@ -255,7 +285,7 @@ cache_line* check_tags(uint32_t address, cache_set* set) {
 	}
 
 	/* Extract byte select bits */
-	byte_select_bits = address & byte_select_mask;
+	byte_select_bits = (address & byte_select_mask) & 0xFF;
 	#ifdef DEBUG
 		printf("Byte select bits = 0x%X\n", byte_select_bits);
 	#endif
@@ -266,8 +296,9 @@ cache_line* check_tags(uint32_t address, cache_set* set) {
 /******************************************************************************
  * EXTRACTS THE INDEX BITS FROM THE ADDRESS
  *****************************************************************************/
- uint32_t extract_index(uint32_t address) {
- 	uint32_t index_bits, index_mask;
+ uint16_t extract_index(uint32_t address) {
+ 	uint32_t index_mask;
+ 	uint16_t index_bits;
 	uint8_t index;
 
 	index_mask = 0;
@@ -278,7 +309,7 @@ cache_line* check_tags(uint32_t address, cache_set* set) {
 	}
 
 	/* Extract index bits */
-	index_bits = (address & index_mask) >> BYTE_SELECT_BITS;	//Shift into the LSB
+	index_bits = ((address & index_mask) >> BYTE_SELECT_BITS) & 0xFFFF;	//Shift into the LSB
 	#ifdef DEBUG
 		printf("Index bits = 0x%X\n", index_bits);
 	#endif
@@ -289,8 +320,9 @@ cache_line* check_tags(uint32_t address, cache_set* set) {
 /******************************************************************************
  * EXTRACTS THE TAG BITS FROM THE ADDRESS
  *****************************************************************************/
- uint32_t extract_tag(uint32_t address) {
- 	uint32_t tag_bits, tag_mask;
+ uint16_t extract_tag(uint32_t address) {
+ 	uint32_t tag_mask;
+ 	uint16_t tag_bits;
 	uint8_t index;
 
 	tag_mask = 0;
@@ -301,7 +333,7 @@ cache_line* check_tags(uint32_t address, cache_set* set) {
 	}
 
 	/* Extract tag bits */
-	tag_bits = (address & tag_mask) >> (BYTE_SELECT_BITS + INDEX_BITS);	//Shift into the LSB
+	tag_bits = ((address & tag_mask) >> (BYTE_SELECT_BITS + INDEX_BITS)) & 0xFFFF;	//Shift into the LSB
 	#ifdef DEBUG
 		printf("Tag bits = 0x%X\n", tag_bits);
 	#endif
