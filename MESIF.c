@@ -12,7 +12,6 @@
  *****************************************************************************/
 
 #include "MESIF.h"
-#define DEBUG
 
 /* Used to simulate a bus operation and to capture the snoop results of the last
 ** level caches of other processors
@@ -23,6 +22,7 @@ void bus_operation(uint8_t bus_op, uint32_t address, uint8_t snoop_result) {
 	char snoop_text[5];
 
 	#ifndef SLIENT
+	#ifdef PRETTY_OUTPUT
 	if( bus_op == READ ) strcpy(bus_op_text, "READ");
 	else if( bus_op == WRITE ) strcpy(bus_op_text, "WRITE");
 	else if( bus_op == INVALIDATE ) strcpy(bus_op_text, "INVALIDATE");
@@ -41,6 +41,15 @@ void bus_operation(uint8_t bus_op, uint32_t address, uint8_t snoop_result) {
 
 		printf("Bus OP: %s, Address: %X, Snoop Result: %s\n", bus_op_text, address, snoop_text);
 	}
+	#else
+	/* When our processor performs a bus_op while snooping, it passes 0xFF to snoop_result */
+	if(snoop_result == 0xFF) {
+		printf("Bus OP: %d, Address: %X\n", bus_op, address);
+	}
+	else {
+		printf("Bus OP: %d, Address: %X, Snoop Result: %d\n", bus_op, address, snoop_result);
+	}
+	#endif
 	#endif
 }
 
@@ -71,12 +80,16 @@ void put_snoop_result(uint32_t address, uint8_t snoop_result) {
 	char snoop_text[5];
 
 	#ifndef SILENT
+	#ifdef PRETTY_OUTPUT
 	if( snoop_result == NOHIT ) strcpy(snoop_text, "NOHIT");
 	else if( snoop_result == HIT ) strcpy(snoop_text, "HIT");
 	else if( snoop_result == HITM ) strcpy(snoop_text, "HITM");
 	else strcpy(snoop_text, "ERROR");
 
 	printf("Address: %X, Snoop Result: %s\n", address, snoop_text);
+	#else
+	printf("Address: %X, Snoop Result: %d\n", address, snoop_result);
+	#endif
 	#endif
 }
 
@@ -264,6 +277,7 @@ void message_to_L2_cache( uint8_t bus_op, uint32_t address) {
 	char bus_op_text[10];
 
 	#ifndef SLIENT
+	#ifdef PRETTY_OUTPUT
 		if( bus_op == READ ) strcpy(bus_op_text, "READ");
 		else if( bus_op == WRITE ) strcpy(bus_op_text, "WRITE");
 		else if( bus_op == INVALIDATE ) strcpy(bus_op_text, "INVALIDATE");
@@ -271,6 +285,9 @@ void message_to_L2_cache( uint8_t bus_op, uint32_t address) {
 		else strcpy(bus_op_text, "ERROR");
 
 		printf("L2 bus_op: %s, Address: %X\n", bus_op_text, address);
+	#else
+		printf("L2 bus_op: %d, Address: %X\n", bus_op, address);
+	#endif
 	#endif
 }
 
