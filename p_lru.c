@@ -65,7 +65,7 @@ DECODE        0  1  2  3  4  5  6  7    8  9  10  11  12  13  14  15
             break;
             
         case 5:
-            LRU &= 0xFFBB;       // clear bit 3,6
+            LRU &= 0xFFB7;       // clear bit 3,6
             LRU |= 0x4020;     // set bit, 5,14
             break;
             
