@@ -219,7 +219,9 @@ void decode_trace(uint8_t trace_op, uint32_t address) {
 					indexed_set->valid_ways--;
 				}
 				break;
-				default: break;
+				default:
+					printf("ERROR: INVALID TRACE OPERATION REQUESTED: %d\n", trace_op);
+				break;
 		}//End switch
 	} //End if
 	else if( trace_op == CLEAR_RESET ) {	/*Clear the cache and reset the state */
