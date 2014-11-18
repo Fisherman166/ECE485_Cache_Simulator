@@ -95,7 +95,7 @@ int main (int argc, char * argv[])
 		}else{
 			printf("\nplease specify trace file: \"./a.out <file name> \"\n\n");
 			exit(-1);
-		}
+		}/*end else*/
 	#else
 		trace_file = fopen("cc1.din", "r");
 	#endif
@@ -103,7 +103,7 @@ int main (int argc, char * argv[])
 	if(trace_file == NULL) {
 		printf("Could not open the specified file\n");
 		exit(-1);
-	}
+	}/*end if*/
 
 	reset_cache();
 
@@ -219,17 +219,18 @@ void decode_trace(uint8_t trace_op, uint32_t address) {
 					indexed_set->valid_ways--;
 				}
 				break;
+				default: break;
 		}//End switch
 	} //End if
 	else if( trace_op == CLEAR_RESET ) {	/*Clear the cache and reset the state */
 		reset_cache();
-	}
+	}/*end else if*/
 	else if( trace_op == PRINT_STATES) { /* Print out all valid cache lines */
 		print_cache();
-	}
+	}/*end else if*/
 	else {
 		printf("Not a trace operation\n");
-	}
+	}/*end else*/
 }
 
 /******************************************************************************
@@ -249,9 +250,9 @@ uint8_t check_tags(uint16_t tag, cache_set* set) {
 					printf("Tag 0x%X found at line %d\n", tag, index);
 				#endif
 				break;
-			}
-		}
-	}
+			}/*End if*/
+		}/*End if*/
+	}/*End for*/
 
 	return match_index;
 }/*END CHECK TAG BIT*/
@@ -271,9 +272,9 @@ void reset_cache(void) {
 			/* Init values in each line */
 			sets[set_index].line[line_index].tag = 0;
 			sets[set_index].line[line_index].MESIF = INVALID;
-		}
-	}
-}
+		}/*end inner for*/
+	}/*end outer for*/
+}/*end reset_cache*/
 
 /******************************************************************************
  * PRINTS OUT ALL VALID CACHE LINES
@@ -305,10 +306,10 @@ void print_cache(void) {
 				#else
 				printf("Set number: 0x%X, Line number: %d, MESIF state: %d, Tag bits: 0x%X\n", set_index, line_index, MESIF_state, tag_bits);
 				#endif
-			}
+			}/*end inner if*/
 		} //End inner for
 	} //End outer for
-}
+}/*end print_cache*/
 
 /******************************************************************************
  * PRINTS CACHE STATISTICS
@@ -324,7 +325,7 @@ void print_statistics(void) {
 	printf("Cache hits: %u\n", cache_hits);
 	printf("Cache misses: %u\n", cache_misses);
 	printf("Cache hit ratio: %g\n", hit_ratio);
-}
+}/*end print_statistics*/
 
 
 /******************************************************************************
@@ -343,18 +344,18 @@ void L1_read_or_write(uint8_t CPU_op, uint16_t tag, uint32_t address,
 		if( indexed_set-> valid_ways < WAYS) { /* There is an invalid line */
 			fill_invalid_line(CPU_op, tag, address, indexed_set);
 			cache_misses++;
-		}
+		}/*end if*/
 		else { /* All lines are currently valid */
 			fill_valid_line(CPU_op, tag, address, indexed_set);
 			cache_misses++;
-		}
-	}
+		}/*end else*/
+	}/*end if*/
 	else {	/* In the cache already */
 		indexed_set->psuedo_LRU = update_LRU(tag_matched_line, indexed_set->psuedo_LRU);
 		CPU_operation(CPU_op, tag, &indexed_set->line[tag_matched_line]);
 		cache_hits++;
-	}
-}
+	}/*end else*/
+}/*end L1_read_or_write*/
 
 /******************************************************************************
  * FUNCTION THAT FILLS AN INVALID CACHE LINE
@@ -371,8 +372,8 @@ void fill_invalid_line(uint8_t CPU_op, uint16_t tag, uint32_t address, cache_set
 			set->valid_ways++;
 			line_filled = line_index;
 			break;
-		}
-	}
+		}/*end if*/
+	}/*end for*/
 
 	#ifdef DEBUG
 		printf("Valid ways = %d\n", set->valid_ways);
@@ -381,7 +382,7 @@ void fill_invalid_line(uint8_t CPU_op, uint16_t tag, uint32_t address, cache_set
 	/* Update the LRU bits and MESIF state */
 	set->psuedo_LRU = update_LRU(line_filled, set->psuedo_LRU);
 	CPU_operation(CPU_op, address, &set->line[line_index]);
-}
+}/*end fill_invalid*/
 
 /******************************************************************************
  * FUNCTION THAT FILLS A LINE WHEN ALL LINES ARE VALID
@@ -403,7 +404,7 @@ void fill_valid_line(uint8_t CPU_op, uint16_t tag, uint32_t address, cache_set* 
 	/* Update the LRU bits and MESIF state */
 	set->psuedo_LRU = update_LRU(line_to_evict, set->psuedo_LRU);
 	CPU_operation(CPU_op, address, &set->line[line_to_evict]);
-}
+}/*end fill_valid_line*/
 
 
 /******************************************************************************
@@ -428,7 +429,7 @@ void fill_valid_line(uint8_t CPU_op, uint16_t tag, uint32_t address, cache_set* 
 	#endif
 
 	return byte_select_bits;
-}
+}/*end extract_byte_select*/
 
 /******************************************************************************
  * EXTRACTS THE INDEX BITS FROM THE ADDRESS
@@ -443,7 +444,7 @@ void fill_valid_line(uint8_t CPU_op, uint16_t tag, uint32_t address, cache_set* 
 	/* Generate the index mask */
 	for(index = BYTE_SELECT_BITS; index < (BYTE_SELECT_BITS + INDEX_BITS); index++) {
 		index_mask |= 1 << index;
-	}
+	}/*end for*/
 
 	/* Extract index bits */
 	index_bits = ((address & index_mask) >> BYTE_SELECT_BITS) & 0xFFFF;	//Shift into the LSB
@@ -452,7 +453,7 @@ void fill_valid_line(uint8_t CPU_op, uint16_t tag, uint32_t address, cache_set* 
 	#endif
 
 	return index_bits;
-}
+}/*end extract_index*/
 
 /******************************************************************************
  * EXTRACTS THE TAG BITS FROM THE ADDRESS
@@ -476,7 +477,7 @@ void fill_valid_line(uint8_t CPU_op, uint16_t tag, uint32_t address, cache_set* 
 	#endif
 
 	return tag_bits;
-}
+}/*end extract_tag*/
 
 /******************************************************************************
  * EOF
