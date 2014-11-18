@@ -1,0 +1,54 @@
+#!/bin/bash
+
+# ECE485 - FINAL PROJECT: CACHE SIMULATOR
+# J.S. PEIRCE
+# SEAN KOPPENHAFER
+# LUIS SANTIAGO
+# 17 NOVEMBER 2014
+
+###############################################################################
+# TEST FILE GENERATOR:
+# -GENERATES AN OP BETWEEN 0-9
+# -GENERATES AN ADDRESS
+# -CONCATENATES THEM
+# -WRITES OUTPUT TO FILE
+#
+# ISSUES:
+# -THOUGH SIMPLE TO MODIFY, ALL OF THE ADDRESSES ARE 8 BITS CURRENTLY
+#
+# *NOTE: WE WILL NEED A WAY TO CHECK THE RESULTS, BUT IF ~TOP && BOTTOM 10
+#  ARE CORRECT AND THEY ARE CORRECT FOR THE PROVIDED *.din FILE, I FEEL
+#  RELATIVELY CONFIDENT THAT IT IS INDEED WORKING
+###############################################################################
+echo enter output file name:
+read OUT_FILE
+
+echo Enter number of lines for test file:
+read LINES
+
+for i in $(seq 1 $LINES)
+do
+
+#generate 8 hex digits:
+ADDRESS=$(openssl rand -hex 4)
+
+#generate OP code:
+COND=$(($RANDOM%11))
+
+	if [ $COND -eq 10 ]; then
+		COND="$(($COND-1))"
+	fi
+
+STRING="$COND $ADDRESS"
+
+#echo COND AFTER: $COND
+#echo ADDRESS: $ADDRESS
+#echo STRING: $STRING
+
+echo $STRING >> $OUT_FILE
+done
+
+exit 0
+###############################################################################
+# EOF
+###############################################################################
