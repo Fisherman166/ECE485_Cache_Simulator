@@ -62,7 +62,11 @@ uint16_t extract_index(uint32_t address);
 uint16_t extract_tag(uint32_t address);
 
 /* Global values */
-cache_set sets[NUM_SETS];	//8k sets in the cache - see cache.h
+cache_set *sets;
+static uint32_t NUM_SETS; 
+static uint32_t TAG_BITS; 
+static uint32_t INDEX_BITS; 
+static uint32_t BYTE_SELECT_BITS; 
 
 /* Cache statistics */
 static uint32_t cache_reads;
@@ -88,6 +92,23 @@ int main (int argc, char * argv[])
 	char buffer[buffer_len];
 	char *operation_ptr, *address_ptr;
 	char operation_text[30];
+
+	/* Init the cache size variables for the given WAYS */
+	NUM_SETS = NUMBER_OF_LINES / WAYS;
+	BYTE_SELECT_BITS = log(BYTES_PER_LINE) / log(2);
+	INDEX_BITS = log(NUM_SETS) / log(2);
+	TAG_BITS = ADDRESS_BITS - (BYTE_SELECT_BITS + INDEX_BITS);
+	sets = (cache_set*)malloc(sizeof(cache_set) * NUM_SETS);	//Malloc however many sets we need
+
+	#ifdef DEBUG
+	printf("Number of sets = %d\n", NUM_SETS);
+	printf("Byte select bits = %d\n", BYTE_SELECT_BITS);
+	printf("Index bits = %d\n", INDEX_BITS);
+	printf("Tag bits = %d\n\n", TAG_BITS);
+	#endif
+
+	sets[8191].valid_ways = 14;
+	printf("WAVLGL = %d\n", sets[8191].valid_ways);
 
 	#ifdef TEST_FILE
 		if(argc>1){
@@ -151,6 +172,7 @@ int main (int argc, char * argv[])
 
 	/* Cleanup */
 	fclose(trace_file);
+	free(sets);
 	print_statistics();
 		
 	return 0;

@@ -19,6 +19,7 @@
 #include <assert.h>
 #include <string.h>
 #include <time.h>
+#include <math.h>
 
 #ifndef _CACHE_H
 #define _CACHE_H
@@ -30,12 +31,10 @@
 #define PRETTY_OUTPUT
 
 /* Cache size definitions */
+#define NUMBER_OF_LINES 131072	/*128k cache lines*/
 #define ADDRESS_BITS 32
-#define TAG_BITS 13
-#define INDEX_BITS 13
-#define BYTE_SELECT_BITS 6
 #define WAYS 16
-#define NUM_SETS 8192
+#define BYTES_PER_LINE 64
 
 /*BUS OPS:*/
 #define READ 			1
