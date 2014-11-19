@@ -107,9 +107,6 @@ int main (int argc, char * argv[])
 	printf("Tag bits = %d\n\n", TAG_BITS);
 	#endif
 
-	sets[8191].valid_ways = 14;
-	printf("WAVLGL = %d\n", sets[8191].valid_ways);
-
 	#ifdef TEST_FILE
 		if(argc>1){
 			trace_file = fopen(argv[1], "r");
