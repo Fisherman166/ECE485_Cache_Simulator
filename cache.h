@@ -31,10 +31,7 @@
 #define PRETTY_OUTPUT
 
 /* Cache size definitions */
-#define NUMBER_OF_LINES 131072	/*128k cache lines*/
 #define ADDRESS_BITS 32
-#define WAYS 16
-#define BYTES_PER_LINE 64
 
 /*BUS OPS:*/
 #define READ 			1
@@ -60,7 +57,7 @@ typedef struct {
 typedef struct {
 	uint16_t psuedo_LRU;
 	uint8_t valid_ways;
-	cache_line line[WAYS];
+	cache_line* line;
 } cache_set;
 
 #endif

@@ -18,6 +18,8 @@
 #include "cache.h"
 #include "LRU.h"
 
+extern uint32_t WAYS;
+
 // used to update the LRU
 // input Set Pseudo_LRU and the index of the line
 // on te set used.
@@ -298,45 +300,45 @@ uint8_t LeastUsed(uint16_t LRU)
 
 
 
-int main()
-{
-    uint8_t line, i;
-    uint16_t LRU;
-    uint8_t victim;
-	 cache_set test_set;
-
-	 /* Init*/
-	 test_set.psuedo_LRU = 0;
-	 test_set.valid_ways = 0;
-
-	 /* Fill up all 16 ways */
-	 for(i = 0; i < WAYS; i++) {
-	 	test_set.psuedo_LRU = update_LRU(i, test_set.psuedo_LRU);
-		test_set.valid_ways++;
-		printf("On init %d, LRU = %X\n", i, test_set.psuedo_LRU);
-	}
-
-	/* Evict all lines in order */
-	for(i = 0; i < WAYS; i++) {
-		victim = LeastUsed(test_set.psuedo_LRU);
-		test_set.psuedo_LRU = update_LRU(victim, test_set.psuedo_LRU);
-		printf("Victim is index %d\n", victim);
-	}
-
-
-    /*printf( "Enter LRU value: ");
-    scanf("%ux", &LRU);
-    // just a test 
-    do
-      {
-    printf( "Enter line to be updated: ");
-    scanf("%d", &line);
-    LRU= update_LRU (line,LRU);
-    printf( "LRU:0x%x \t line: %u \n\n", LRU,  line);
-    victim= LeastUsed(LRU);
-    printf( "Last used: %u \n\n",  victim);
-      }while (line <16);*/
-    
-    return 0;
-}
+//int main()
+//{
+//    uint8_t line, i;
+//    uint16_t LRU;
+//    uint8_t victim;
+//	 cache_set test_set;
+//
+//	 /* Init*/
+//	 test_set.psuedo_LRU = 0;
+//	 test_set.valid_ways = 0;
+//
+//	 /* Fill up all 16 ways */
+//	 for(i = 0; i < WAYS; i++) {
+//	 	test_set.psuedo_LRU = update_LRU(i, test_set.psuedo_LRU);
+//		test_set.valid_ways++;
+//		printf("On init %d, LRU = %X\n", i, test_set.psuedo_LRU);
+//	}
+//
+//	/* Evict all lines in order */
+//	for(i = 0; i < WAYS; i++) {
+//		victim = LeastUsed(test_set.psuedo_LRU);
+//		test_set.psuedo_LRU = update_LRU(victim, test_set.psuedo_LRU);
+//		printf("Victim is index %d\n", victim);
+//	}
+//
+//
+//    /*printf( "Enter LRU value: ");
+//    scanf("%ux", &LRU);
+//    // just a test 
+//    do
+//      {
+//    printf( "Enter line to be updated: ");
+//    scanf("%d", &line);
+//    LRU= update_LRU (line,LRU);
+//    printf( "LRU:0x%x \t line: %u \n\n", LRU,  line);
+//    victim= LeastUsed(LRU);
+//    printf( "Last used: %u \n\n",  victim);
+//      }while (line <16);*/
+//    
+//    return 0;
+//}
 

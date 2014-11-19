@@ -47,9 +47,11 @@ typedef struct {
 /* Trace related functions */
 void decode_trace(uint8_t trace_op, uint32_t address);
 uint8_t check_tags(uint16_t tag, cache_set* set);
+void init_cache(void);
 void reset_cache(void);
 void print_cache(void);
 void print_statistics(void);
+void cleanup(FILE*);
 
 /* CPU reads and writes */
 void L1_read_or_write(uint8_t CPU_op, uint16_t tag, uint32_t address, uint8_t tag_matched_line, cache_set* indexed_set);
@@ -63,10 +65,12 @@ uint16_t extract_tag(uint32_t address);
 
 /* Global values */
 cache_set *sets;
-static uint32_t NUM_SETS; 
-static uint32_t TAG_BITS; 
-static uint32_t INDEX_BITS; 
-static uint32_t BYTE_SELECT_BITS; 
+uint32_t NUM_SETS; 
+uint32_t WAYS;
+uint32_t BYTES_PER_LINE;
+uint32_t TAG_BITS; 
+uint32_t INDEX_BITS; 
+uint32_t BYTE_SELECT_BITS; 
 
 /* Cache statistics */
 static uint32_t cache_reads;
@@ -93,8 +97,15 @@ int main (int argc, char * argv[])
 	char *operation_ptr, *address_ptr;
 	char operation_text[30];
 
-	/* Init the cache size variables for the given WAYS */
-	NUM_SETS = NUMBER_OF_LINES / WAYS;
+	/* Get cache specifications from user */
+	printf("Enter the number of sets in the cache: ");
+	scanf("%u", &NUM_SETS);
+	printf("Enter the number of ways in the cache (must be power of 2 and a max of 64): ");
+	scanf("%u", &WAYS);
+	printf("Enter the number of bytes in a line: ");
+	scanf("%u", &BYTES_PER_LINE);
+
+	/* Calculate cache variables from user input */
 	BYTE_SELECT_BITS = log(BYTES_PER_LINE) / log(2);
 	INDEX_BITS = log(NUM_SETS) / log(2);
 	TAG_BITS = ADDRESS_BITS - (BYTE_SELECT_BITS + INDEX_BITS);
@@ -112,6 +123,7 @@ int main (int argc, char * argv[])
 			trace_file = fopen(argv[1], "r");
 		}else{
 			printf("\nplease specify trace file: \"./a.out <file name> \"\n\n");
+			free(sets);
 			exit(-1);
 		}/*end else*/
 	#else
@@ -123,7 +135,7 @@ int main (int argc, char * argv[])
 		exit(-1);
 	}/*end if*/
 
-	reset_cache();
+	init_cache();
 
 //	#ifdef WARM_CACHE
 //				sets[set_index].line[line_index].MESIF = (rand()%4);
@@ -168,9 +180,7 @@ int main (int argc, char * argv[])
 	}
 
 	/* Cleanup */
-	fclose(trace_file);
-	free(sets);
-	print_statistics();
+	cleanup(trace_file);
 		
 	return 0;
 }/*END MAIN*/
@@ -278,19 +288,39 @@ uint8_t check_tags(uint16_t tag, cache_set* set) {
 	return match_index;
 }/*END CHECK TAG BIT*/
 
+
+/******************************************************************************
+ * INIT THE CACHE
+ *****************************************************************************/
+void init_cache(void) {
+	int set_index, line_index;
+
+	/*INITIALIZE CACHE ARRAY*/
+	for(set_index = 0; set_index < NUM_SETS; set_index++) {
+		sets[set_index].psuedo_LRU = 0;
+		sets[set_index].valid_ways = 0;
+		sets[set_index].line = (cache_line*)malloc(sizeof(cache_line) * WAYS);
+
+		for(line_index = 0; line_index < WAYS; line_index++){
+			/* Init values in each line */
+			sets[set_index].line[line_index].tag = 0;
+			sets[set_index].line[line_index].MESIF = INVALID;
+		}/*end inner for*/
+	}/*end outer for*/
+}
+
 /******************************************************************************
  * RESETS THE CACHE
  *****************************************************************************/
 void reset_cache(void) {
 	int set_index, line_index;
 
-	/*INITIALIZE CACHE ARRAY*/
+	/* Reset cache line */
 	for(set_index = 0; set_index < NUM_SETS; set_index++) {
-		for(line_index = 0; line_index < WAYS; line_index++){
-			sets[set_index].psuedo_LRU = 0;
-			sets[set_index].valid_ways = 0;
+		sets[set_index].psuedo_LRU = 0;
+		sets[set_index].valid_ways = 0;
 
-			/* Init values in each line */
+		for(line_index = 0; line_index < WAYS; line_index++){
 			sets[set_index].line[line_index].tag = 0;
 			sets[set_index].line[line_index].MESIF = INVALID;
 		}/*end inner for*/
@@ -348,6 +378,22 @@ void print_statistics(void) {
 	printf("Cache hit ratio: %g\n", hit_ratio);
 }/*end print_statistics*/
 
+
+/******************************************************************************
+ * CLEANUP FUNCTION
+ *****************************************************************************/
+void cleanup(FILE* trace_file) {
+	uint32_t set_index, line_index;
+	fclose(trace_file);
+
+	/* Free all the lines */
+	for(set_index = 0; set_index < NUM_SETS; set_index++) {
+		free(sets[set_index].line);
+	}
+
+	free(sets);
+	print_statistics();
+}
 
 /******************************************************************************
  * DETERMINES WHAT TO DO ON A CPU READ OR WRITE DEPENDING ON IF THE LINE IS
