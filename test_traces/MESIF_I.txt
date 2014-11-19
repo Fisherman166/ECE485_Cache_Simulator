@@ -1,4 +1,4 @@
-3 02
-4 02
-5 02
-6 02
+3 02	//Snoop INV
+4 02	//Snoop read
+5 02	//Snoop write
+6 02	//Snoop RWIM
