@@ -314,8 +314,14 @@ void init_cache(void) {
  *****************************************************************************/
 void reset_cache(void) {
 	int set_index, line_index;
+	
+	/* Reset cache statistics */
+	cache_hits = 0;
+	cache_misses = 0;
+	cache_reads = 0;
+	cache_writes = 0;
 
-	/* Reset cache line */
+	/* Reset cache sets */
 	for(set_index = 0; set_index < NUM_SETS; set_index++) {
 		sets[set_index].psuedo_LRU = 0;
 		sets[set_index].valid_ways = 0;
