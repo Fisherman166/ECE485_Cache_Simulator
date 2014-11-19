@@ -46,7 +46,7 @@ typedef struct {
 
 /* Trace related functions */
 void decode_trace(uint8_t trace_op, uint32_t address);
-uint8_t check_tags(uint16_t tag, cache_set* set);
+uint32_t check_tags(uint32_t tag, cache_set* set);
 void init_cache(void);
 void reset_cache(void);
 void print_cache(void);
@@ -54,14 +54,14 @@ void print_statistics(void);
 void cleanup(FILE*);
 
 /* CPU reads and writes */
-void L1_read_or_write(uint8_t CPU_op, uint16_t tag, uint32_t address, uint8_t tag_matched_line, cache_set* indexed_set);
-void fill_invalid_line(uint8_t CPU_op, uint16_t tag, uint32_t address, cache_set* set);
-void fill_valid_line(uint8_t CPU_op, uint16_t tag, uint32_t address, cache_set* set);
+void L1_read_or_write(uint8_t CPU_op, uint32_t tag, uint32_t address, uint32_t tag_matched_line, cache_set* indexed_set);
+void fill_invalid_line(uint8_t CPU_op, uint32_t tag, uint32_t address, cache_set* set);
+void fill_valid_line(uint8_t CPU_op, uint32_t tag, uint32_t address, cache_set* set);
 
 /* Functions that break down the address */
-uint8_t extract_byte_select(uint32_t address);
-uint16_t extract_index(uint32_t address);
-uint16_t extract_tag(uint32_t address);
+uint32_t extract_byte_select(uint32_t address);
+uint32_t extract_index(uint32_t address);
+uint32_t extract_tag(uint32_t address);
 
 /* Global values */
 cache_set *sets;
@@ -192,11 +192,11 @@ int main (int argc, char * argv[])
 
 /* Send in the trace op and the address */
 void decode_trace(uint8_t trace_op, uint32_t address) {
-	const uint8_t no_match = 0xFF;
-	uint16_t index, tag;
-	uint8_t byte_select, line_filled;
+	const uint32_t no_match = 0xFFFFFFFF;
+	uint32_t index, tag;
+	uint32_t byte_select;
 	cache_set* indexed_set;
-	uint8_t tag_matched_line;
+	uint32_t tag_matched_line;
 
 	/* Decode the address */
 	byte_select = extract_byte_select(address);
@@ -266,11 +266,11 @@ void decode_trace(uint8_t trace_op, uint32_t address) {
 
 /******************************************************************************
  * FUNCTION THAT CHECKS FOR A MATCHING TAG WITHIN THE SET
- * RETURNS 0xFF IF NO TAG MATCHES
+ * RETURNS 0xFFFFFFFF IF NO TAG MATCHES
  *****************************************************************************/
-uint8_t check_tags(uint16_t tag, cache_set* set) {
-	uint8_t index;
-	uint8_t match_index = 0xFF;
+uint32_t check_tags(uint32_t tag, cache_set* set) {
+	uint32_t index;
+	uint32_t match_index = 0xFFFFFFFF;
 
 	/* Check the lines in the set for matching tag */
 	for(index = 0; index < WAYS; index++) {
@@ -333,7 +333,7 @@ void reset_cache(void) {
 void print_cache(void) {
 	int set_index, line_index;
 	char MESIF_text[10];
-	uint16_t tag_bits;
+	uint32_t tag_bits;
 	uint8_t MESIF_state;
 
 	printf("\n/****************************************************************\n");
@@ -383,7 +383,7 @@ void print_statistics(void) {
  * CLEANUP FUNCTION
  *****************************************************************************/
 void cleanup(FILE* trace_file) {
-	uint32_t set_index, line_index;
+	uint32_t set_index;
 	fclose(trace_file);
 
 	/* Free all the lines */
@@ -399,9 +399,9 @@ void cleanup(FILE* trace_file) {
  * DETERMINES WHAT TO DO ON A CPU READ OR WRITE DEPENDING ON IF THE LINE IS
  * ALREADY IN THE CACHE OR NOT
  *****************************************************************************/
-void L1_read_or_write(uint8_t CPU_op, uint16_t tag, uint32_t address, 
-							 uint8_t tag_matched_line, cache_set* indexed_set) { 
-	const uint8_t no_match = 0xFF;
+void L1_read_or_write(uint8_t CPU_op, uint32_t tag, uint32_t address, 
+			uint32_t tag_matched_line, cache_set* indexed_set) { 
+	const uint32_t no_match = 0xFFFFFFFF;
 
 	/* Update cache statistics */
 	if(CPU_op == READ_DATA_L1 || CPU_op == READ_INS_L1) cache_reads++;
@@ -428,7 +428,7 @@ void L1_read_or_write(uint8_t CPU_op, uint16_t tag, uint32_t address,
  * FUNCTION THAT FILLS AN INVALID CACHE LINE
  * HANDLE UPDATING MESIF and PLRU in here as well
  *****************************************************************************/
-void fill_invalid_line(uint8_t CPU_op, uint16_t tag, uint32_t address, cache_set* set) {
+void fill_invalid_line(uint8_t CPU_op, uint32_t tag, uint32_t address, cache_set* set) {
 	uint8_t line_filled;
 	uint8_t line_index;
 
@@ -455,7 +455,7 @@ void fill_invalid_line(uint8_t CPU_op, uint16_t tag, uint32_t address, cache_set
  * FUNCTION THAT FILLS A LINE WHEN ALL LINES ARE VALID
  * HANDLE UPDATING MESIF and PLRU in here as well
  *****************************************************************************/
-void fill_valid_line(uint8_t CPU_op, uint16_t tag, uint32_t address, cache_set* set) {
+void fill_valid_line(uint8_t CPU_op, uint32_t tag, uint32_t address, cache_set* set) {
 	uint8_t line_to_evict;
 
 	/* Find the line to evict and change the MESIF state to INVALID */
@@ -477,9 +477,9 @@ void fill_valid_line(uint8_t CPU_op, uint16_t tag, uint32_t address, cache_set* 
 /******************************************************************************
  * EXTRACTS THE BYTE SELECT BITS FROM THE ADDRESS
  *****************************************************************************/
- uint8_t extract_byte_select(uint32_t address) {
+ uint32_t extract_byte_select(uint32_t address) {
 	uint32_t byte_select_mask;
- 	uint8_t byte_select_bits;
+ 	uint32_t byte_select_bits;
 	uint8_t index;
 
 	byte_select_mask = 0;
@@ -490,7 +490,7 @@ void fill_valid_line(uint8_t CPU_op, uint16_t tag, uint32_t address, cache_set* 
 	}
 
 	/* Extract byte select bits */
-	byte_select_bits = (address & byte_select_mask) & 0xFF;
+	byte_select_bits = (address & byte_select_mask);
 	#ifdef DEBUG
 		printf("Byte select bits = 0x%X\n", byte_select_bits);
 	#endif
@@ -501,9 +501,9 @@ void fill_valid_line(uint8_t CPU_op, uint16_t tag, uint32_t address, cache_set* 
 /******************************************************************************
  * EXTRACTS THE INDEX BITS FROM THE ADDRESS
  *****************************************************************************/
- uint16_t extract_index(uint32_t address) {
+ uint32_t extract_index(uint32_t address) {
  	uint32_t index_mask;
- 	uint16_t index_bits;
+ 	uint32_t index_bits;
 	uint8_t index;
 
 	index_mask = 0;
@@ -525,9 +525,9 @@ void fill_valid_line(uint8_t CPU_op, uint16_t tag, uint32_t address, cache_set* 
 /******************************************************************************
  * EXTRACTS THE TAG BITS FROM THE ADDRESS
  *****************************************************************************/
- uint16_t extract_tag(uint32_t address) {
+ uint32_t extract_tag(uint32_t address) {
  	uint32_t tag_mask;
- 	uint16_t tag_bits;
+ 	uint32_t tag_bits;
 	uint8_t index;
 
 	tag_mask = 0;

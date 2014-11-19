@@ -47,7 +47,7 @@
 
 /* Holds all variables stored in a cache line */
 typedef struct {
-	uint16_t tag;
+	uint32_t tag;
 	uint8_t MESIF;
 	uint8_t last_bus_op;		/* MESIF debug - our CPU accesses memory */
 	uint8_t last_snoop_result;	/* MESIF debug - our CPU snooping - NOHIT, HIT or HITM */
@@ -55,8 +55,8 @@ typedef struct {
 
 /* Holds all variables stored in a set */
 typedef struct {
-	uint16_t psuedo_LRU;
-	uint8_t valid_ways;
+	uint64_t psuedo_LRU;
+	uint32_t valid_ways;
 	cache_line* line;
 } cache_set;
 
