@@ -1,0 +1,40 @@
+//To two different indexes
+//18 Reads
+//7 Writes
+//20 Hits
+//5 Misses
+
+//Index 0, Line 0
+0 0	//Read, miss
+0 0	//Read, hit
+2 0	//Read, hit
+2 0	//Read, hit
+1 0	//Write, hit
+
+//Index 0, Line 1
+2 80000	//Read, miss
+2 80000	//Read, hit
+0 80000	//Read, hit
+0 80000	//Read, hit
+1 80000	//Write, hit
+
+//Index 1, Line 0
+1 100040	//Write, miss
+1 100040	//Write, hit
+1 100040	//Write, hit
+0 100040	//Read, hit
+0 100040	//Read, hit
+
+//Index 1, Line 1
+0 180040	//Read, miss
+0 180040	//Read, hit
+2 180040	//Read, hit
+2 180040	//Read, hit
+1 180040	//Write, hit
+
+//Index 2, Line 0
+0 200080	//Read, miss
+0 200080	//Read, hit
+2 200080	//Read, hit
+2 200080	//Read, hit
+1 200080	//Write, hit
