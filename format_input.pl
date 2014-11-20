@@ -38,7 +38,7 @@ while( my $row = <$read_file> ) {
 		$formatted_string = "$1 $2\n";
 		print $write_file $formatted_string;
 	}
-	elsif($row =~ m/(\d)/) {   #Is a print or reset operation
+	elsif($row =~ m/^(\d)/) {   #Is a print or reset operation
 		$formatted_string = "$1 0\n";	#Provide a dummy address
 		print $write_file $formatted_string;
 }	}
