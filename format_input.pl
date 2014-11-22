@@ -34,7 +34,7 @@ while( my $row = <$read_file> ) {
 
 	#Looks for rows that have our format but with too many spaces
 	#Then makes it so there is only 1 space between operation and address
-	if($row =~ m/(\d)\s+([\da-f]+)/i) {
+	if($row =~ m/^(\d)\s+([\da-f]+)/i) {
 		$formatted_string = "$1 $2\n";
 		print $write_file $formatted_string;
 	}
