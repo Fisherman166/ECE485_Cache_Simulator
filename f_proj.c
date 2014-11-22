@@ -14,7 +14,7 @@
  *****************************************************************************/
 #include "MESIF.h"
 #include "cache.h"
-#include "LRU.h"
+#include "pseudolru.h"
 
 /*TRACE RESULTS:*/
 #define READ_DATA_L1  0
@@ -46,7 +46,7 @@ typedef struct {
 
 /* Trace related functions */
 void decode_trace(uint8_t trace_op, uint32_t address);
-uint32_t check_tags(uint32_t tag, cache_set* set);
+uint8_t check_tags(uint32_t tag, cache_set* set);
 void init_cache(void);
 void reset_cache(void);
 void print_cache(void);
@@ -192,11 +192,11 @@ int main (int argc, char * argv[])
 
 /* Send in the trace op and the address */
 void decode_trace(uint8_t trace_op, uint32_t address) {
-	const uint32_t no_match = 0xFFFFFFFF;
+	const uint8_t no_match = 0xFF;
 	uint32_t index, tag;
 	uint32_t byte_select;
 	cache_set* indexed_set;
-	uint32_t tag_matched_line;
+	uint8_t tag_matched_line;
 
 	/* Decode the address */
 	byte_select = extract_byte_select(address);
@@ -266,11 +266,11 @@ void decode_trace(uint8_t trace_op, uint32_t address) {
 
 /******************************************************************************
  * FUNCTION THAT CHECKS FOR A MATCHING TAG WITHIN THE SET
- * RETURNS 0xFFFFFFFF IF NO TAG MATCHES
+ * RETURNS 0xFF IF NO TAG MATCHES AND THE LINE INDEX IF THERE IS A MATCH
  *****************************************************************************/
-uint32_t check_tags(uint32_t tag, cache_set* set) {
+uint8_t check_tags(uint32_t tag, cache_set* set) {
 	uint32_t index;
-	uint32_t match_index = 0xFFFFFFFF;
+	uint8_t match_index = 0xFF;
 
 	/* Check the lines in the set for matching tag */
 	for(index = 0; index < WAYS; index++) {
@@ -297,7 +297,7 @@ void init_cache(void) {
 
 	/*INITIALIZE CACHE ARRAY*/
 	for(set_index = 0; set_index < NUM_SETS; set_index++) {
-		sets[set_index].psuedo_LRU = 0;
+		sets[set_index].pseudo_LRU = 0;
 		sets[set_index].valid_ways = 0;
 		sets[set_index].line = (cache_line*)malloc(sizeof(cache_line) * WAYS);
 
@@ -323,7 +323,7 @@ void reset_cache(void) {
 
 	/* Reset cache sets */
 	for(set_index = 0; set_index < NUM_SETS; set_index++) {
-		sets[set_index].psuedo_LRU = 0;
+		sets[set_index].pseudo_LRU = 0;
 		sets[set_index].valid_ways = 0;
 
 		for(line_index = 0; line_index < WAYS; line_index++){
@@ -406,8 +406,8 @@ void cleanup(FILE* trace_file) {
  * ALREADY IN THE CACHE OR NOT
  *****************************************************************************/
 void L1_read_or_write(uint8_t CPU_op, uint32_t tag, uint32_t address, 
-			uint32_t tag_matched_line, cache_set* indexed_set) { 
-	const uint32_t no_match = 0xFFFFFFFF;
+								uint32_t tag_matched_line, cache_set* indexed_set) { 
+	const uint8_t no_match = 0xFF;
 
 	/* Update cache statistics */
 	if(CPU_op == READ_DATA_L1 || CPU_op == READ_INS_L1) cache_reads++;
@@ -424,7 +424,7 @@ void L1_read_or_write(uint8_t CPU_op, uint32_t tag, uint32_t address,
 		}/*end else*/
 	}/*end if*/
 	else {	/* In the cache already */
-		indexed_set->psuedo_LRU = update_LRU(tag_matched_line, indexed_set->psuedo_LRU);
+		indexed_set->pseudo_LRU = update_LRU(tag_matched_line, indexed_set->pseudo_LRU);
 		CPU_operation(CPU_op, tag, &indexed_set->line[tag_matched_line]);
 		cache_hits++;
 	}/*end else*/
@@ -453,7 +453,7 @@ void fill_invalid_line(uint8_t CPU_op, uint32_t tag, uint32_t address, cache_set
 	#endif
 
 	/* Update the LRU bits and MESIF state */
-	set->psuedo_LRU = update_LRU(line_filled, set->psuedo_LRU);
+	set->pseudo_LRU = update_LRU(line_filled, set->pseudo_LRU);
 	CPU_operation(CPU_op, address, &set->line[line_index]);
 }/*end fill_invalid*/
 
@@ -465,7 +465,7 @@ void fill_valid_line(uint8_t CPU_op, uint32_t tag, uint32_t address, cache_set* 
 	uint8_t line_to_evict;
 
 	/* Find the line to evict and change the MESIF state to INVALID */
-	line_to_evict = LeastUsed(set->psuedo_LRU);
+	line_to_evict = FindVictim(set->pseudo_LRU);
 	set->line[line_to_evict].MESIF = INVALID;
 	#ifdef DEBUG
 		printf("Index of line to evict = %d\n", line_to_evict);
@@ -475,7 +475,7 @@ void fill_valid_line(uint8_t CPU_op, uint32_t tag, uint32_t address, cache_set* 
 	set->line[line_to_evict].tag = tag;
 
 	/* Update the LRU bits and MESIF state */
-	set->psuedo_LRU = update_LRU(line_to_evict, set->psuedo_LRU);
+	set->pseudo_LRU = update_LRU(line_to_evict, set->pseudo_LRU);
 	CPU_operation(CPU_op, address, &set->line[line_to_evict]);
 }/*end fill_valid_line*/
 

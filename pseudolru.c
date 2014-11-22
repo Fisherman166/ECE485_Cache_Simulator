@@ -22,22 +22,10 @@
 #define CHECK_BIT(var,pos) ((var) & (1<<(pos)))
 #define SET_BIT(var,n) ((var) |= (1 << (n)))
 #define CLR_BIT(var,n) ((var) &= ~(1 << (n)))
-// should be defined elsewhere
-uint8_t WAYS;
 
-typedef struct {
-    uint32_t victim;        // initiate to 0 and it is used to generate
-                            // binary value of Least recently used
-    uint32_t levels;        // saves Log2(Ways) used to count leves
-                            // on tree and determine when done
-    uint32_t MIDPOINT;      // Value to determine walk direction
-    uint8_t Bits;          // index of bits in LRU
-    uint64_t LRU;           // Stores passed LRU (only for simplicity)
-    uint8_t n;             // used to calculate ways
-}LRU_Data ;
+extern uint32_t WAYS;	/* Defined in f_proj.c */
 
-
-void decode_LRU(LRU_Data* packLRU )
+void decode_LRU(LRU_Data* packLRU)
 {
     /* check LRU bits and use them as flag to get the next bit
      to read in order to find the direction at the next lower level
@@ -210,41 +198,41 @@ uint64_t update_LRU(uint8_t line, uint64_t LRU)
 
 
 
-int main()
-{
-    uint8_t i, victim;
-    char cont;
-    
-    cache_set test_set;
-    test_set.pseudo_LRU=0;
-    LRU_Data *packLRU;
-    LRU_Data myStruct;
-    packLRU= & myStruct;
-    
-    printf( "Enter Cache Set ways:\n");
-    scanf("%u", &WAYS);
-    
-    //Fill up all entered ways
-    
-    for(i = 0; i < WAYS; i++) {
-        test_set.pseudo_LRU = update_LRU(i, test_set.pseudo_LRU);
-        test_set.valid_ways++;
-        printf("On init %d, LRU = 0X%llx\n\n", i, test_set.pseudo_LRU);
-    }
-    
-    printf( "\n**************************************\n");
-    printf( "\nPress y (lower case) with Victim test:\n");
-    scanf(" %c", &cont);
-    
-    if(cont=='y'){
-        //  Evict all lines in order
-        for(i = 0; i < WAYS; i++) {
-            victim = FindVictim(test_set.pseudo_LRU);
-            test_set.pseudo_LRU = update_LRU(victim, test_set.pseudo_LRU);
-            printf("Victim is index %d\n\n", victim);
-        }
-    }
-    
-    return 0;
-}
+//int main()
+//{
+//    uint8_t i, victim;
+//    char cont;
+//    
+//    cache_set test_set;
+//    test_set.pseudo_LRU=0;
+//    LRU_Data *packLRU;
+//    LRU_Data myStruct;
+//    packLRU= & myStruct;
+//    
+//    printf( "Enter Cache Set ways:\n");
+//    scanf("%u", &WAYS);
+//    
+//    //Fill up all entered ways
+//    
+//    for(i = 0; i < WAYS; i++) {
+//        test_set.pseudo_LRU = update_LRU(i, test_set.pseudo_LRU);
+//        test_set.valid_ways++;
+//        printf("On init %d, LRU = 0X%llx\n\n", i, test_set.pseudo_LRU);
+//    }
+//    
+//    printf( "\n**************************************\n");
+//    printf( "\nPress y (lower case) with Victim test:\n");
+//    scanf(" %c", &cont);
+//    
+//    if(cont=='y'){
+//        //  Evict all lines in order
+//        for(i = 0; i < WAYS; i++) {
+//            victim = FindVictim(test_set.pseudo_LRU);
+//            test_set.pseudo_LRU = update_LRU(victim, test_set.pseudo_LRU);
+//            printf("Victim is index %d\n\n", victim);
+//        }
+//    }
+//    
+//    return 0;
+//}
 
