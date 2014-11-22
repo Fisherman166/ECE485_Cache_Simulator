@@ -55,7 +55,7 @@ typedef struct {
 
 /* Holds all variables stored in a set */
 typedef struct {
-	uint64_t psuedo_LRU;
+	uint64_t pseudo_LRU;
 	uint32_t valid_ways;
 	cache_line* line;
 } cache_set;
