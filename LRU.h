@@ -24,7 +24,7 @@
 // reurns an updated LRU value
 uint64_t update_LRU( uint8_t index, uint64_t LRU);
 
-// returns the leat recently used line on the set
+// returns the least recently used line on the set
 // using P_LRU
 uint8_t FindVictim(uint64_t LRU);
 
