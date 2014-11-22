@@ -9,6 +9,8 @@
 #ifndef ____pseudolru__
 #define ____pseudolru__
 
+#include "cache.h"
+
 /* Internal datatype */
 typedef struct {
     uint32_t victim;        // initiate to 0 and it is used to generate

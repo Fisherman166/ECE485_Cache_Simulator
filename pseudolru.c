@@ -13,10 +13,6 @@
  WAYS is a global variable deffined in _________
  */
 
-
-#include "cache.h"
-#include <math.h>
-#include <assert.h>
 #include "pseudolru.h"
 
 #define CHECK_BIT(var,pos) ((var) & (1<<(pos)))
@@ -56,7 +52,8 @@ void decode_LRU(LRU_Data* packLRU)
             packLRU->victim |= 1 << 0;
             return;
         }
-    }else{
+    }
+	 else {
         
         --packLRU->levels;  //indicate next lower level
         //Calculate next bit to read
@@ -75,16 +72,9 @@ void decode_LRU(LRU_Data* packLRU)
 }
 
 
-
-
-
-
-//  Takes the  LRU Value from the main program in order to fint the victim
-// input uint64_t
-
+//Uses the LRU value from a set to find the victim line
 uint8_t FindVictim (uint64_t LRU)
 {
-    
     LRU_Data myStruct;
     LRU_Data *packLRU;
     packLRU= & myStruct;
@@ -101,8 +91,8 @@ uint8_t FindVictim (uint64_t LRU)
 }
 
 
+/* Searches down a right branch */
 void GoRight(LRU_Data* packLRU)
-
 {
     uint32_t midpoint = packLRU->MIDPOINT;
     
@@ -122,7 +112,7 @@ void GoRight(LRU_Data* packLRU)
     packLRU->MIDPOINT= midpoint + WAYS/(pow(2,packLRU->n));
 }
 
-
+/* Searches down the left branch */
 void GoLeft(LRU_Data* packLRU)
 {
     uint32_t midpoint = packLRU->MIDPOINT;
@@ -142,7 +132,6 @@ void GoLeft(LRU_Data* packLRU)
     packLRU->MIDPOINT= midpoint - WAYS/(pow(2,packLRU->n));
    
 }
-
 
 
 /* Check line value given against the root of the tree
@@ -168,10 +157,10 @@ void Check_Tree(LRU_Data* packLRU, uint32_t line)
         {
             GoRight(packLRU);
             Check_Tree (packLRU, line);
-        }
-        
+        } 
     }
 }
+
 
 uint64_t update_LRU(uint8_t line, uint64_t LRU)
 {
@@ -195,7 +184,6 @@ uint64_t update_LRU(uint8_t line, uint64_t LRU)
     
     return packLRU->LRU;
 }
-
 
 
 //int main()
