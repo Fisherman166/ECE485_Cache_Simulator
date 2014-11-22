@@ -98,32 +98,35 @@ int main (int argc, char * argv[])
 	char operation_text[30];
 
 	/* Get cache specifications from user */
-	printf("Enter the number of sets in the cache: ");
+	printf("Enter the number of sets in the cache (must be a power of 2): ");
 	scanf("%u", &NUM_SETS);
 	printf("Enter the number of ways in the cache (must be power of 2 and a max of 64): ");
 	scanf("%u", &WAYS);
-	printf("Enter the number of bytes in a line: ");
+	printf("Enter the number of bytes in a line (must be a two of 2): ");
 	scanf("%u", &BYTES_PER_LINE);
 
 	/* Calculate cache variables from user input */
 	BYTE_SELECT_BITS = log(BYTES_PER_LINE) / log(2);
 	INDEX_BITS = log(NUM_SETS) / log(2);
 	TAG_BITS = ADDRESS_BITS - (BYTE_SELECT_BITS + INDEX_BITS);
-	sets = (cache_set*)malloc(sizeof(cache_set) * NUM_SETS);	//Malloc however many sets we need
 
 	#ifdef DEBUG
-	printf("Number of sets = %d\n", NUM_SETS);
-	printf("Byte select bits = %d\n", BYTE_SELECT_BITS);
-	printf("Index bits = %d\n", INDEX_BITS);
-	printf("Tag bits = %d\n\n", TAG_BITS);
+	printf("\nByte select bits = %u\n", BYTE_SELECT_BITS);
+	printf("Index bits = %u\n", INDEX_BITS);
+	printf("Tag bits = %u\n\n", TAG_BITS);
 	#endif
+
+	/* Check for an illegal cache configuration */
+	if( (BYTE_SELECT_BITS + INDEX_BITS) >= ADDRESS_BITS ) {
+		printf("The entered cache configuration is too large to fit within a 32 bit address.\n");
+		exit(-2);
+	}
 
 	#ifdef TEST_FILE
 		if(argc>1){
 			trace_file = fopen(argv[1], "r");
 		}else{
 			printf("\nplease specify trace file: \"./a.out <file name> \"\n\n");
-			free(sets);
 			exit(-1);
 		}/*end else*/
 	#else
@@ -135,6 +138,8 @@ int main (int argc, char * argv[])
 		exit(-1);
 	}/*end if*/
 
+	/* If all checks pass above, allocate the sets */
+	sets = (cache_set*)malloc(sizeof(cache_set) * NUM_SETS);	//Malloc however many sets we need
 	init_cache();
 
 //	#ifdef WARM_CACHE
