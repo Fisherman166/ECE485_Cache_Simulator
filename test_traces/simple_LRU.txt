@@ -2,44 +2,44 @@
 //Then it goes through and evicts all of the lines in a simple order.
 //If correct, all cache references should be misses.
 
-//First 16 lines in set 8191 (0x7FF80)
-0 87FF80
-2 107FF80
-0 187FF80
-2 207FF80
-0 287FF80
-2 307FF80
-0 387FF80
-2 407FF80
-0 487FF80
-2 507FF80
-0 587FF80
-2 607FF80
-0 687FF80
-2 707FF80
-0 787FF80
-2 807FF80
+//In index 0 so it works for all set sizes
+0 800000
+2 1000000
+0 1800000
+2 2000000
+0 2800000
+2 3000000
+0 3800000
+2 4000000
+0 4800000
+2 5000000
+0 5800000
+2 6000000
+0 6800000
+2 7000000
+0 7800000
+2 8000000
 
 //Evict 4 lines.  Should evict 0, 8, 4, 12 in order
-0 887FF80
-2 907FF80
-0 987FF80
-2 1007FF80
+0 8800000
+2 9000000
+0 9800000
+2 10000000
 
 //Try to access the 4 evicted lines again.  Should evict 2, 10, 6, 14
-0 87FF80
-0 287FF80
-0 487FF80
-0 687FF80
+0 800000
+0 2800000
+0 4800000
+0 6800000
 
 //Try to access the 4 newly evicted lines.  Should evict 1, 9, 5, 13
-0 187FF80
-0 387FF80
-0 587FF80
-0 787FF80
+0 1800000
+0 3800000
+0 5800000
+0 7800000
 
 //Finally, try to access the last 4 evicted lines.  Should evict 3, 11, 7, 15
-2 107FF80
-2 307FF80
-2 507FF80
-2 707FF80
+2 1000000
+2 3000000
+2 5000000
+2 7000000
