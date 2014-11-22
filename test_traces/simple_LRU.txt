@@ -1,0 +1,45 @@
+//This trace fills up all 16 indexes in a set in order.
+//Then it goes through and evicts all of the lines in a simple order.
+//If correct, all cache references should be misses.
+
+//First 16 lines in set 8191 (0x7FF80)
+0 87FF80
+2 107FF80
+0 187FF80
+2 207FF80
+0 287FF80
+2 307FF80
+0 387FF80
+2 407FF80
+0 487FF80
+2 507FF80
+0 587FF80
+2 607FF80
+0 687FF80
+2 707FF80
+0 787FF80
+2 807FF80
+
+//Evict 4 lines.  Should evict 0, 8, 4, 12 in order
+0 887FF80
+2 907FF80
+0 987FF80
+2 1007FF80
+
+//Try to access the 4 evicted lines again.  Should evict 2, 10, 6, 14
+0 87FF80
+0 287FF80
+0 487FF80
+0 687FF80
+
+//Try to access the 4 newly evicted lines.  Should evict 1, 9, 5, 13
+0 187FF80
+0 387FF80
+0 587FF80
+0 787FF80
+
+//Finally, try to access the last 4 evicted lines.  Should evict 3, 11, 7, 15
+2 107FF80
+2 307FF80
+2 507FF80
+2 707FF80
