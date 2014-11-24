@@ -21,7 +21,7 @@ void bus_operation(uint8_t bus_op, uint32_t address, uint8_t snoop_result) {
 	char bus_op_text[10];
 	char snoop_text[5];
 
-	#ifndef SLIENT
+	#ifndef SILENT
 	#ifdef PRETTY_OUTPUT
 	if( bus_op == READ ) strcpy(bus_op_text, "READ");
 	else if( bus_op == WRITE ) strcpy(bus_op_text, "WRITE");
@@ -276,7 +276,7 @@ void other_CPU_operation(uint8_t bus_op, uint32_t address, cache_line* line) {
 void message_to_L2_cache( uint8_t bus_op, uint32_t address) {
 	char bus_op_text[10];
 
-	#ifndef SLIENT
+	#ifndef SILENT
 	#ifdef PRETTY_OUTPUT
 		if( bus_op == READ ) strcpy(bus_op_text, "READ");
 		else if( bus_op == WRITE ) strcpy(bus_op_text, "WRITE");
