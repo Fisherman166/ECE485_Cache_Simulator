@@ -1,0 +1,21 @@
+//This test is for the cache with 2 sets, 4 ways, and 64 byte lines
+//Byte select = 6 bits, index = 1 bits, tag = 26 bits
+//Another simple test for LRU
+
+//Fill 3 lines
+0 0	//Read, NOHIT
+1 81	//Write, HIT
+2 101	//Read, HIT
+
+//Invalidate 0 and 2
+3 0	//Snoop invalidate
+3 101	//Snoop invalidate
+
+//Fill the set
+0 3200
+0 3300
+0 3400
+
+//Lines 1 and then 2 should be evicted
+1 3500
+0 3602
