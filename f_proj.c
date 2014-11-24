@@ -377,7 +377,7 @@ void print_cache(void) {
  * PRINTS CACHE STATISTICS
  *****************************************************************************/
 void print_statistics(void) {
-	double hit_ratio = (double)cache_hits / (double)cache_misses;
+	double hit_ratio = (double)cache_hits / ((double)cache_hits + (double)cache_misses);
 
 	printf("\n/****************************************************************\n");
 	printf("** PRINTING CACHE STATISTICS\n");
@@ -525,7 +525,7 @@ void fill_valid_line(uint8_t CPU_op, uint32_t tag, uint32_t address, cache_set* 
 	}/*end for*/
 
 	/* Extract index bits */
-	index_bits = ((address & index_mask) >> BYTE_SELECT_BITS) & 0xFFFF;	//Shift into the LSB
+	index_bits = (address & index_mask) >> BYTE_SELECT_BITS;	//Shift into the LSB
 	#ifdef DEBUG
 		printf("Index bits = 0x%X\n", index_bits);
 	#endif
@@ -549,7 +549,7 @@ void fill_valid_line(uint8_t CPU_op, uint32_t tag, uint32_t address, cache_set* 
 	}
 
 	/* Extract tag bits */
-	tag_bits = ((address & tag_mask) >> (BYTE_SELECT_BITS + INDEX_BITS)) & 0xFFFF;	//Shift into the LSB
+	tag_bits = (address & tag_mask) >> (BYTE_SELECT_BITS + INDEX_BITS);	//Shift into the LSB
 	#ifdef DEBUG
 		printf("Tag bits = 0x%X\n", tag_bits);
 	#endif
@@ -560,3 +560,4 @@ void fill_valid_line(uint8_t CPU_op, uint32_t tag, uint32_t address, cache_set* 
 /******************************************************************************
  * EOF
  *****************************************************************************/
+
