@@ -54,7 +54,7 @@ void print_statistics(void);
 void cleanup(FILE*);
 
 /* CPU reads and writes */
-void L1_read_or_write(uint8_t CPU_op, uint32_t tag, uint32_t address, uint32_t tag_matched_line, cache_set* indexed_set);
+void L1_read_or_write(uint8_t CPU_op, uint32_t tag, uint32_t address, uint8_t tag_matched_line, cache_set* indexed_set);
 void fill_invalid_line(uint8_t CPU_op, uint32_t tag, uint32_t address, cache_set* set);
 void fill_valid_line(uint8_t CPU_op, uint32_t tag, uint32_t address, cache_set* set);
 
@@ -411,7 +411,7 @@ void cleanup(FILE* trace_file) {
  * ALREADY IN THE CACHE OR NOT
  *****************************************************************************/
 void L1_read_or_write(uint8_t CPU_op, uint32_t tag, uint32_t address, 
-								uint32_t tag_matched_line, cache_set* indexed_set) { 
+								uint8_t tag_matched_line, cache_set* indexed_set) { 
 	const uint8_t no_match = 0xFF;
 
 	/* Update cache statistics */
