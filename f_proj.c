@@ -12,9 +12,12 @@
  * -PSEUDO LRU
  ******************************************************************************
  *****************************************************************************/
+
 #include "MESIF.h"
 #include "cache.h"
 #include "pseudolru.h"
+
+#define WB_SIZE 20	//Defines the size of the posted write buffer
 
 /*TRACE RESULTS:*/
 #define READ_DATA_L1  0
@@ -44,6 +47,13 @@ typedef struct {
 	uint32_t address;
 } trace_line;
 
+typedef struct {
+	uint32_t buffer_slots[WB_SIZE];
+	uint8_t slot_valid[WB_SIZE];
+	uint8_t add_position, remove_position;
+	uint8_t evict_counter;
+} posted_write_buffer;
+
 /* Trace related functions */
 void decode_trace(uint8_t trace_op, uint32_t address);
 uint8_t check_tags(uint32_t tag, cache_set* set);
@@ -63,6 +73,13 @@ uint32_t extract_byte_select(uint32_t address);
 uint32_t extract_index(uint32_t address);
 uint32_t extract_tag(uint32_t address);
 
+/* Posted Write Buffer */
+posted_write_buffer write_buffer;
+void add_write_buffer(uint32_t address);
+uint8_t search_write_buffer(uint32_t address);
+void evict_write_buffer(void);
+void clear_write_buffer(void);
+
 /* Global values */
 cache_set *sets;
 uint32_t NUM_SETS; 
@@ -77,6 +94,7 @@ static uint32_t cache_reads;
 static uint32_t cache_writes;
 static uint32_t cache_hits;
 static uint32_t cache_misses;
+
 
 /******************************************************************************
  * 	MAIN LOOP: 
@@ -433,6 +451,10 @@ void L1_read_or_write(uint8_t CPU_op, uint32_t tag, uint32_t address,
 		CPU_operation(CPU_op, tag, &indexed_set->line[tag_matched_line]);
 		cache_hits++;
 	}/*end else*/
+
+	#ifdef DEBUG
+	printf("After read/write, pseudo LRU bits = 0x%llX\n", (long long unsigned int)indexed_set->pseudo_LRU);
+	#endif
 }/*end L1_read_or_write*/
 
 /******************************************************************************
@@ -556,6 +578,34 @@ void fill_valid_line(uint8_t CPU_op, uint32_t tag, uint32_t address, cache_set* 
 
 	return tag_bits;
 }/*end extract_tag*/
+
+/******************************************************************************
+ * ADDS EVICTED CACHE LINE TO THE WRITE BUFFER
+ *****************************************************************************/
+void add_write_buffer(uint32_t address) {
+	write_buffer.buffer_slots[add_position++] = address;
+}
+
+/******************************************************************************
+ * SEARCHES THE WRITE BUFFER FOR AN EXISTING CACHE LINE
+ * RETURNS 1 IF THE LINE IS IN THE BUFFER, 0 IF THE LINE IS NOT IN THE BUFFER
+ *****************************************************************************/
+uint8_t search_write_buffer(uint32_t address) {
+	uint8_t index;
+	uint8_t retval = 0;
+
+	/* If the two positions are not equal, then the buffer is not empty */
+	if(write_buffer.remove_position != write_buffer.add_position) {
+		for(index = 0; index < WB_SIZE; index++) {
+			if(address = 
+
+
+EXIT:
+	return retval;
+}
+
+void evict_write_buffer(void);
+void clear_write_buffer(void);
 
 /******************************************************************************
  * EOF
