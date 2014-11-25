@@ -17,7 +17,11 @@
 #include "cache.h"
 #include "pseudolru.h"
 
-#define WB_SIZE 20	//Defines the size of the posted write buffer
+/* Defines for write buffer */
+#define WB_SIZE 10		//Defines the size of the posted write buffer
+#define WB_COUNT 5		//Number of traces before the write buffer writes to memory
+#define SLOT_VALID 1
+#define SLOT_INVALID 0
 
 /*TRACE RESULTS:*/
 #define READ_DATA_L1  0
@@ -48,10 +52,12 @@ typedef struct {
 } trace_line;
 
 typedef struct {
-	uint32_t buffer_slots[WB_SIZE];
+	uint32_t buffer_slot[WB_SIZE];
 	uint8_t slot_valid[WB_SIZE];
-	uint8_t add_position, remove_position;
-	uint8_t evict_counter;
+	uint8_t head, tail;
+	uint8_t trace_counter;
+	uint8_t tag_index;		/* The index of the most recenetly matched tag */
+	uint32_t truncate_mask;
 } posted_write_buffer;
 
 /* Trace related functions */
@@ -75,9 +81,9 @@ uint32_t extract_tag(uint32_t address);
 
 /* Posted Write Buffer */
 posted_write_buffer write_buffer;
-void add_write_buffer(uint32_t address);
+void add_to_write_buffer(uint32_t address);
 uint8_t search_write_buffer(uint32_t address);
-void evict_write_buffer(void);
+void writeback_line_write_buffer(void);
 void clear_write_buffer(void);
 
 /* Global values */
@@ -221,6 +227,16 @@ void decode_trace(uint8_t trace_op, uint32_t address) {
 	cache_set* indexed_set;
 	uint8_t tag_matched_line;
 
+	/* Update the trace counter if the buffer has something in it */
+	if(write_buffer.head != write_buffer.tail) {
+		write_buffer.trace_counter++;
+
+		if(write_buffer.trace_counter == WB_COUNT) { /* Need to write a line back to memory */
+			writeback_line_write_buffer();
+			write_buffer.trace_counter = 0;
+		}
+	}
+
 	/* Decode the address */
 	byte_select = extract_byte_select(address);
 	index = extract_index(address);
@@ -318,6 +334,13 @@ uint8_t check_tags(uint32_t tag, cache_set* set) {
 void init_cache(void) {
 	int set_index, line_index;
 
+	clear_write_buffer();
+
+	/* Generate the truncate mask for the posted write buffer */
+	for(set_index = 0; set_index < BYTE_SELECT_BITS; set_index++) {
+		write_buffer.truncate_mask |= 1 << set_index;
+	}
+
 	/*INITIALIZE CACHE ARRAY*/
 	for(set_index = 0; set_index < NUM_SETS; set_index++) {
 		sets[set_index].pseudo_LRU = 0;
@@ -337,6 +360,8 @@ void init_cache(void) {
  *****************************************************************************/
 void reset_cache(void) {
 	int set_index, line_index;
+
+	clear_write_buffer();
 	
 	/* Reset cache statistics */
 	cache_hits = 0;
@@ -389,6 +414,17 @@ void print_cache(void) {
 			}/*end inner if*/
 		} //End inner for
 	} //End outer for
+
+	printf("\n/****************************************************************\n");
+	printf("** PRINTING VALID LINES IN WRITE BUFFER\n");
+	printf("*****************************************************************/\n");
+
+	for(set_index = 0; set_index < WB_SIZE; set_index++) {
+		if(write_buffer.slot_valid[set_index]) {
+			printf("Write buffer slot %d holds cache line: 0x%X\n", set_index, write_buffer.buffer_slot[set_index]);
+		}
+	}
+
 }/*end print_cache*/
 
 /******************************************************************************
@@ -437,14 +473,15 @@ void L1_read_or_write(uint8_t CPU_op, uint32_t tag, uint32_t address,
 	else cache_writes++;
 
 	if( tag_matched_line == no_match ) {	/* Not in the cache already */
-		if( indexed_set-> valid_ways < WAYS) { /* There is an invalid line */
+
+		cache_misses++;
+		if( indexed_set->valid_ways < WAYS) { /* There is an invalid line */
 			fill_invalid_line(CPU_op, tag, address, indexed_set);
-			cache_misses++;
-		}/*end if*/
+		}
 		else { /* All lines are currently valid */
 			fill_valid_line(CPU_op, tag, address, indexed_set);
-			cache_misses++;
-		}/*end else*/
+		}
+
 	}/*end if*/
 	else {	/* In the cache already */
 		indexed_set->pseudo_LRU = update_LRU(tag_matched_line, indexed_set->pseudo_LRU);
@@ -463,7 +500,15 @@ void L1_read_or_write(uint8_t CPU_op, uint32_t tag, uint32_t address,
  *****************************************************************************/
 void fill_invalid_line(uint8_t CPU_op, uint32_t tag, uint32_t address, cache_set* set) {
 	uint8_t line_filled;
-	uint8_t line_index;
+	uint8_t line_index, in_write_buffer;
+
+	/* Search write buffer first */
+	in_write_buffer = search_write_buffer(address);	/* Will return 1 if found */
+
+	#ifndef SILENT
+	if(in_write_buffer) printf("Read cache line from write buffer: 0x%X\n", address);
+	else printf("Read cache line from DRAM: 0x%X\n", address);
+	#endif
 
 	/* Replace TAG in an invalid line */
 	for(line_index = 0; line_index < WAYS; line_index++) {
@@ -489,10 +534,26 @@ void fill_invalid_line(uint8_t CPU_op, uint32_t tag, uint32_t address, cache_set
  * HANDLE UPDATING MESIF and PLRU in here as well
  *****************************************************************************/
 void fill_valid_line(uint8_t CPU_op, uint32_t tag, uint32_t address, cache_set* set) {
-	uint8_t line_to_evict;
+	uint8_t line_to_evict, in_write_buffer;
+	uint32_t index_bits = extract_index(address);	//Needed to rebuild the address of an evicted dirty line
+	uint32_t dirty_line_address = 0;
 
-	/* Find the line to evict and change the MESIF state to INVALID */
+	/* Search write buffer first */
+	in_write_buffer = search_write_buffer(address);	/* Will return 1 if found */
+
+	#ifndef SILENT
+	if(in_write_buffer) printf("Read cache line from write buffer: 0x%X\n", address);
+	else printf("Read cache line from DRAM: 0x%X\n", address);
+	#endif
+
+	/* Find the line to evict and change the MESIF state to INVALID
+	** IF evicted line was in the modified state, write it to write buffer */
 	line_to_evict = FindVictim(set->pseudo_LRU);
+	if(set->line[line_to_evict].MESIF == MODIFIED) {
+		dirty_line_address |= (set->line[line_to_evict].tag << (BYTE_SELECT_BITS + INDEX_BITS)) | (index_bits << BYTE_SELECT_BITS);
+		add_to_write_buffer(dirty_line_address);
+	}
+
 	set->line[line_to_evict].MESIF = INVALID;
 	#ifdef DEBUG
 		printf("Index of line to evict = %d\n", line_to_evict);
@@ -580,10 +641,22 @@ void fill_valid_line(uint8_t CPU_op, uint32_t tag, uint32_t address, cache_set* 
 }/*end extract_tag*/
 
 /******************************************************************************
- * ADDS EVICTED CACHE LINE TO THE WRITE BUFFER
+ * ADDS DIRTY EVICTED CACHE LINE TO THE WRITE BUFFER
  *****************************************************************************/
-void add_write_buffer(uint32_t address) {
-	write_buffer.buffer_slots[add_position++] = address;
+void add_to_write_buffer(uint32_t address) {
+	uint32_t line_address = address & ~write_buffer.truncate_mask;	//Set byte offset bits to 0
+	uint8_t in_buffer = search_write_buffer(address);	/* Will return 1 if it is in the buffer */
+
+	if(in_buffer) { /* We already have the tag as a write in the buffer */
+		/* Remove the old write */
+		write_buffer.buffer_slot[write_buffer.tag_index] = 0;
+		write_buffer.slot_valid[write_buffer.tag_index] = 0;
+	}
+
+	/* Add the new write */
+	write_buffer.buffer_slot[write_buffer.tail] = line_address;
+	write_buffer.slot_valid[write_buffer.tail] = 1;
+	write_buffer.tail = (write_buffer.tail + 1) % WB_SIZE;	/* Wrap around the queue */
 }
 
 /******************************************************************************
@@ -593,19 +666,66 @@ void add_write_buffer(uint32_t address) {
 uint8_t search_write_buffer(uint32_t address) {
 	uint8_t index;
 	uint8_t retval = 0;
+	uint32_t line_address = address & ~write_buffer.truncate_mask;	//Set byte offset bits to 0
+
+	#ifdef DEBUG
+	printf("Search Write Buffer: Address: 0x%X, Line Address: 0x%X\n", address, line_address);
+	#endif
 
 	/* If the two positions are not equal, then the buffer is not empty */
-	if(write_buffer.remove_position != write_buffer.add_position) {
+	if(write_buffer.tail != write_buffer.head) {
 		for(index = 0; index < WB_SIZE; index++) {
-			if(address = 
 
+			if(write_buffer.buffer_slot[index] == line_address) {
+				if(write_buffer.slot_valid[index]) { /* The line is in the write buffer */
+					write_buffer.tag_index = index;
+					retval = 1;
+					break;
+				} /* End slot valid */
+			} 
 
-EXIT:
+		} /* End for */
+	}
+
 	return retval;
 }
 
-void evict_write_buffer(void);
-void clear_write_buffer(void);
+/******************************************************************************
+ * WRITES A LINE BACK TO DRAM FROM THE WRITE BUFFER EVERY WB_COUNT TRACES
+ *****************************************************************************/
+void writeback_line_write_buffer(void) {
+	/* Head may not be valid from a newer write to the same address. 
+	** Keep moving forward until a valid line is found
+	*/
+	while(write_buffer.slot_valid[write_buffer.head] != SLOT_VALID) {
+		write_buffer.head = (write_buffer.head + 1) % WB_COUNT;	/* Wrap around */
+	}
+
+	#ifndef SILENT
+	printf("Write buffer Writeback to DRAM, Address: 0x%X\n", write_buffer.buffer_slot[write_buffer.head]);
+	#endif
+
+	write_buffer.buffer_slot[write_buffer.head] = 0;
+	write_buffer.slot_valid[write_buffer.head] = 0;
+	write_buffer.head = (write_buffer.head + 1) % WB_COUNT;	/* Wrap around */
+}
+
+/******************************************************************************
+ * CLEARS THE WRITE BUFFER
+ *****************************************************************************/
+void clear_write_buffer(void) {
+	int index;
+
+	/* Clear write buffer */
+	write_buffer.head = 0;
+	write_buffer.tail = 0;
+	write_buffer.trace_counter = 0;
+	write_buffer.tag_index = 0;
+	for(index = 0; index < WB_SIZE; index++) {
+		write_buffer.buffer_slot[index] = 0;
+		write_buffer.slot_valid[index] = 0;
+	}
+}
 
 /******************************************************************************
  * EOF
