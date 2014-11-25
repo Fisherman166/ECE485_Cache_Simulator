@@ -230,11 +230,6 @@ void decode_trace(uint8_t trace_op, uint32_t address) {
 	/* Update the trace counter if the buffer has something in it */
 	if(write_buffer.head != write_buffer.tail) {
 		write_buffer.trace_counter++;
-
-		if(write_buffer.trace_counter == WB_COUNT) { /* Need to write a line back to memory */
-			writeback_line_write_buffer();
-			write_buffer.trace_counter = 0;
-		}
 	}
 
 	/* Decode the address */
@@ -301,6 +296,11 @@ void decode_trace(uint8_t trace_op, uint32_t address) {
 	else {
 		printf("Not a trace operation\n");
 	}/*end else*/
+
+	if(write_buffer.trace_counter == WB_COUNT) { /* Need to write a line back to memory */
+		writeback_line_write_buffer();
+		write_buffer.trace_counter = 0;
+	}
 }
 
 /******************************************************************************
@@ -424,6 +424,8 @@ void print_cache(void) {
 			printf("Write buffer slot %d holds cache line: 0x%X\n", set_index, write_buffer.buffer_slot[set_index]);
 		}
 	}
+
+	printf("\n");
 
 }/*end print_cache*/
 
