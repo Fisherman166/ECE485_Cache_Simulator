@@ -1,0 +1,22 @@
+//This test evicts a dirty cache line into the write buffer
+//Then it writes to the same address again and evicts that line
+//Tests to see if the write buffer only holds the newest value
+
+//Use a 2 way cache for this test to make it simple.  2 sets would work fine as well
+
+//Non-dirty first
+1 1001	//Write
+0 200A	//Read, HIT
+
+//Evict the dirty line.  Then print write buffer.
+0 3004	//Read, NOHIT
+9	//Print cache and write buffer
+
+//Write to the same address that is in the write buffer.  Then read 2 new lines
+//in to evict the dirty line.  Should replace the original write in the buffer.
+1 1001	//Write
+0 400A	//Read, HIT
+0 500A	//Read, HIT
+9	//Print cache and write buffer
+9	//Print cache and write buffer
+
