@@ -2,6 +2,9 @@
 //Byte select = 6 bits, index = 1 bits, tag = 26 bits
 //Another simple test for LRU
 
+//Checks to see what happens when other caches invalidate a few lines in a set
+//Before evicting something
+
 //Fill 3 lines
 0 0	//Read, NOHIT
 1 81	//Write, HIT

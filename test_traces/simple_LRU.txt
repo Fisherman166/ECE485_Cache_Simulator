@@ -1,5 +1,7 @@
+//Use 8k sets, 16 ways in a set, and 64 byte lines
+
 //This trace fills up all 16 indexes in a set in order.
-//Then it goes through and evicts all of the lines in a simple order.
+//Then it goes through and evicts all of the lines one at a time
 //If correct, all cache references should be misses.
 
 //In index 0 so it works for all set sizes
