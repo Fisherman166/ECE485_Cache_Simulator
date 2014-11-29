@@ -1,5 +1,5 @@
 //This test will evict a non-dirty line from the cache, which should not end up in the posted write buffer.
-//Then a dirty line will be evicted, which should up in the write buffer
+//Then a dirty line will be evicted, which should end up in the write buffer
 //The cache will be printed, showing the contents of the write buffer
 //Then the line will be read in from the write buffer
 //After 5 traces, the buffer will write the line back to memory and be empty again
@@ -20,9 +20,9 @@
 
 //Re-read the line currently in the write buffer
 //Then print the write buffer to show the line has been written back to DRAM
-0 200A
-0 200A
-0 200A
-0 200A
-9
+0 200A	//Read, HIT
+0 200A	//Read, HIT
+0 200A	//Read, HIT
+0 200A	//Read, HIT
+9			//Print cache and write buffer
 

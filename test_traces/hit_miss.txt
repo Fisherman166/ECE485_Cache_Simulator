@@ -41,3 +41,4 @@
 2 200000	//Read, hit
 2 200000	//Read, hit
 1 200000	//Write, hit
+9 			//Print the cache
