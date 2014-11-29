@@ -54,7 +54,7 @@ typedef struct {
 typedef struct {
 	uint32_t buffer_slot[WB_SIZE];
 	uint8_t slot_valid[WB_SIZE];
-	uint8_t head, tail;
+	uint8_t head, tail, full;
 	uint8_t trace_counter;
 	uint8_t tag_index;		/* The index of the most recenetly matched tag */
 	uint32_t truncate_mask;
@@ -655,6 +655,14 @@ void add_to_write_buffer(uint32_t address) {
 	uint32_t line_address = address & ~write_buffer.truncate_mask;	//Set byte offset bits to 0
 	uint8_t in_buffer = search_write_buffer(address);	/* Will return 1 if it is in the buffer */
 
+	/* Buffer could be full, so stall and write to DRAM */
+	if(write_buffer.full) {
+		#ifdef DEBUG
+		printf("Write buffer full - stalling processor to write to DRAM\n");
+		#endif
+		writeback_line_write_buffer();
+	}
+
 	if(in_buffer) { /* We already have the tag as a write in the buffer */
 		/* Remove the old write */
 		write_buffer.buffer_slot[write_buffer.tag_index] = 0;
@@ -665,6 +673,8 @@ void add_to_write_buffer(uint32_t address) {
 	write_buffer.buffer_slot[write_buffer.tail] = line_address;
 	write_buffer.slot_valid[write_buffer.tail] = 1;
 	write_buffer.tail = (write_buffer.tail + 1) % WB_SIZE;	/* Wrap around the queue */
+	if(write_buffer.tail == write_buffer.head)
+		write_buffer.full = 1;
 }
 
 /******************************************************************************
@@ -727,6 +737,7 @@ void clear_write_buffer(void) {
 	/* Clear write buffer */
 	write_buffer.head = 0;
 	write_buffer.tail = 0;
+	write_buffer.full = 0;
 	write_buffer.trace_counter = 0;
 	write_buffer.tag_index = 0;
 	for(index = 0; index < WB_SIZE; index++) {
