@@ -1,5 +1,5 @@
 //This test evicts a dirty cache line into the write buffer
-//Then it writes to the same address again and evicts that line
+//Then it evicts the same dirty line again
 //Tests to see if the write buffer only holds the newest value
 
 //Use a 2 way cache for this test to make it simple.  2 sets would work fine as well
