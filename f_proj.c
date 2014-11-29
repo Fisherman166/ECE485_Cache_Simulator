@@ -124,9 +124,9 @@ int main (int argc, char * argv[])
 	/* Get cache specifications from user */
 	printf("Enter the number of sets in the cache (must be a power of 2): ");
 	scanf("%u", &NUM_SETS);
-	printf("Enter the number of ways in the cache (must be power of 2 and a max of 64): ");
+	printf("Enter the number of ways in the cache (must be power of 2 less than 128): ");
 	scanf("%u", &WAYS);
-	printf("Enter the number of bytes in a line (must be a two of 2): ");
+	printf("Enter the number of bytes in a line (must be a power of 2): ");
 	scanf("%u", &BYTES_PER_LINE);
 
 	/* Calculate cache variables from user input */
