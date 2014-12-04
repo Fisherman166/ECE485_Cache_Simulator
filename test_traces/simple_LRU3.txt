@@ -1,8 +1,10 @@
-//This trace fills up all 16 indexes in a set in order.
-//Then it goes through and evicts all of the lines in a simple order.
-//If correct, all cache references should be misses.
+// Trace is design to test a 16 way set 
+// The trace fills up 8 indexes in a set in order.
+// Then access 2 from the first lines entered 
+// then it continous to fill the the cache then
+// begins to evict lines
 
-//In index 0 so it works for all set sizes
+// In index 0 so it works for all set sizes
 0 800000
 2 1000000
 0 1800000
@@ -36,4 +38,20 @@
 0 9800000
 2 10000000
 
+// used the evicted lines to evict next
+// should evict 1,10,5,14
+0 1800000
+0 4800000
+0 3800000
+0 6800000
 
+// should evict 3, 9, 7, 13
+0 2000000
+2 3000000
+0 5800000
+0 7800000
+
+
+// read 0 then should evict 11
+0 800000
+2 6000000

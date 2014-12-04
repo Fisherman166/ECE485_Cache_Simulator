@@ -1,0 +1,17 @@
+// test for smalles posible number of sets 2
+
+// fill a two way cache
+0 8000000
+2 8800000
+
+// read them in pososite order
+0 8800000
+0 8000000
+
+
+//evict 1,0  
+
+2 9000000
+0 9800000
+
+
