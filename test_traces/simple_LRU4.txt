@@ -15,7 +15,7 @@
 0 3800000
 2 4000000
 
-// reads 0-6 leavin 7 as least used 
+// reads 0-6 leaving 7 as least used 
 0 800000
 2 1000000
 0 1800000
