@@ -1,0 +1,16 @@
+//Use with a write buffer that only holds 1 item at a time to see if it will write back to DRAM when full
+//Use 2 sets, 2 ways and 64 byte lines for this test
+
+//Write two dirty lines to evict later
+1 1001	//Write
+1 200A	//Write
+
+//Evict the first dirty line and print the write buffer
+0 3004	//Read, NOHIT
+9			//Print cache and write buffer
+
+//Evict the second dirty line. The write buffer should write the previous
+//line back to DRAM because it is full, and then put in the newly evicted line.
+2 4008	//Read, NOHIT
+9			//Print cache and write buffer
+
