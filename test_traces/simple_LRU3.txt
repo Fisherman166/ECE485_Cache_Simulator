@@ -24,7 +24,6 @@
 // reads line 4 
 0 2800000
 
-
 // continue to fill the catche (from 11-15)
 2 6000000
 0 6800000
@@ -51,7 +50,7 @@
 0 5800000
 0 7800000
 
-
 // read 0 then should evict 11
 0 800000
 2 6000000
+
