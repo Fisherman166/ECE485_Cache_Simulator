@@ -410,7 +410,7 @@ void print_cache(void) {
 				if(MESIF_state == EXCLUSIVE) strcpy(MESIF_text, "EXCLUSIVE");
 				else if(MESIF_state == SHARED) strcpy(MESIF_text, "SHARED");
 				else if(MESIF_state == FORWARD) strcpy(MESIF_text, "FORWARD");
-				else if(MESIF_state == MODIFIED) strcpy(MESIF_text, "MODIFED");
+				else if(MESIF_state == MODIFIED) strcpy(MESIF_text, "MODIFIED");
 				else strcpy(MESIF_text, "ERROR");
 				
 				printf("Set number: 0x%X, Line number: %d, MESIF state: %s, Tag bits: 0x%X\n", set_index, line_index, MESIF_text, tag_bits);
@@ -657,7 +657,7 @@ void add_to_write_buffer(uint32_t address) {
 
 	/* Buffer could be full, so stall and write to DRAM */
 	if(write_buffer.full) {
-		#ifdef DEBUG
+		#ifndef SILENT
 		printf("Write buffer full - stalling processor to write to DRAM\n");
 		#endif
 		writeback_line_write_buffer();
