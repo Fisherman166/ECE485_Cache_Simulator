@@ -120,8 +120,12 @@ int main (int argc, char * argv[])
 	char buffer[buffer_len];
 	char *operation_ptr, *address_ptr;
 	char operation_text[30];
+	uint32_t inter_ways;
 
 	/* Get cache specifications from user */
+	printf("In the following prompts, all non-powers of two will be rounded down to the nearest power of two.\n");
+	printf("For example, 31 will round down to 16.\n");
+	printf("1 is not an acceptable input.  Will cause an error in the cache simulator.\n\n"); 
 	printf("Enter the number of sets in the cache (must be a power of 2): ");
 	scanf("%u", &NUM_SETS);
 	printf("Enter the number of ways in the cache (must be power of 2 less than 128): ");
@@ -129,13 +133,23 @@ int main (int argc, char * argv[])
 	printf("Enter the number of bytes in a line (must be a power of 2): ");
 	scanf("%u", &BYTES_PER_LINE);
 
+	if( NUM_SETS < 2 || WAYS < 2 || BYTES_PER_LINE < 2) {
+		printf("1 is not an acceptable input value.  Exiting.\n");
+		exit(-3);
+	}
+
+	/* Round down the number of ways if not a power of 2 */
+	inter_ways = log(WAYS) / log(2);
+	WAYS = pow(2, inter_ways);
+
 	/* Calculate cache variables from user input */
 	BYTE_SELECT_BITS = log(BYTES_PER_LINE) / log(2);
 	INDEX_BITS = log(NUM_SETS) / log(2);
 	TAG_BITS = ADDRESS_BITS - (BYTE_SELECT_BITS + INDEX_BITS);
 
 	#ifdef DEBUG
-	printf("\nByte select bits = %u\n", BYTE_SELECT_BITS);
+	printf("\nNumber of ways = %u\n", WAYS);
+	printf("Byte select bits = %u\n", BYTE_SELECT_BITS);
 	printf("Index bits = %u\n", INDEX_BITS);
 	printf("Tag bits = %u\n\n", TAG_BITS);
 	#endif
