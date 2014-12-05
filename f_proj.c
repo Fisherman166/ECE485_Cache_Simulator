@@ -120,7 +120,7 @@ int main (int argc, char * argv[])
 	char buffer[buffer_len];
 	char *operation_ptr, *address_ptr;
 	char operation_text[30];
-	uint32_t inter_ways;
+	uint32_t inter_ways, inter_sets;
 
 	/* Get cache specifications from user */
 	printf("In the following prompts, all non-powers of two will be rounded down to the nearest power of two.\n");
@@ -138,9 +138,11 @@ int main (int argc, char * argv[])
 		exit(-3);
 	}
 
-	/* Round down the number of ways if not a power of 2 */
+	/* Round down the number of ways and sets if not a power of 2 */
 	inter_ways = log(WAYS) / log(2);
 	WAYS = pow(2, inter_ways);
+	inter_sets = log(NUM_SETS) / log(2);
+	NUM_SETS = pow(2, inter_sets);
 
 	/* Calculate cache variables from user input */
 	BYTE_SELECT_BITS = log(BYTES_PER_LINE) / log(2);
