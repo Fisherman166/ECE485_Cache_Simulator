@@ -537,11 +537,6 @@ void fill_invalid_line(uint8_t CPU_op, uint32_t tag, uint32_t address, cache_set
 	/* Search write buffer first */
 	in_write_buffer = search_write_buffer(address);	/* Will return 1 if found */
 
-	#ifndef SILENT
-	if(in_write_buffer) printf("Read cache line from write buffer: 0x%X\n", address);
-	else printf("Read cache line from DRAM: 0x%X\n", address);
-	#endif
-
 	/* Replace TAG in an invalid line */
 	for(line_index = 0; line_index < WAYS; line_index++) {
 		if( set->line[line_index].MESIF == INVALID ) {
@@ -559,6 +554,11 @@ void fill_invalid_line(uint8_t CPU_op, uint32_t tag, uint32_t address, cache_set
 	/* Update the LRU bits and MESIF state */
 	set->pseudo_LRU = update_LRU(line_filled, set->pseudo_LRU);
 	CPU_operation(CPU_op, address, &set->line[line_index]);
+
+	#ifndef SILENT
+	if(in_write_buffer) printf("Read cache line from write buffer: 0x%X\n", address);
+	else printf("Read cache line from DRAM: 0x%X\n", address);
+	#endif
 }/*end fill_invalid*/
 
 /******************************************************************************
@@ -572,11 +572,6 @@ void fill_valid_line(uint8_t CPU_op, uint32_t tag, uint32_t address, cache_set* 
 
 	/* Search write buffer first */
 	in_write_buffer = search_write_buffer(address);	/* Will return 1 if found */
-
-	#ifndef SILENT
-	if(in_write_buffer) printf("Read cache line from write buffer: 0x%X\n", address);
-	else printf("Read cache line from DRAM: 0x%X\n", address);
-	#endif
 
 	/* Find the line to evict and change the MESIF state to INVALID
 	** IF evicted line was in the modified state, write it to write buffer */
@@ -597,6 +592,11 @@ void fill_valid_line(uint8_t CPU_op, uint32_t tag, uint32_t address, cache_set* 
 	/* Update the LRU bits and MESIF state */
 	set->pseudo_LRU = update_LRU(line_to_evict, set->pseudo_LRU);
 	CPU_operation(CPU_op, address, &set->line[line_to_evict]);
+
+	#ifndef SILENT
+	if(in_write_buffer) printf("Read cache line from write buffer: 0x%X\n", address);
+	else printf("Read cache line from DRAM: 0x%X\n", address);
+	#endif
 }/*end fill_valid_line*/
 
 
