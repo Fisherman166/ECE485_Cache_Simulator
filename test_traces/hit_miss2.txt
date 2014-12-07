@@ -4,7 +4,7 @@
 //6 Writes
 //17 Hits
 //5 Misses
-//0.8 hit ratio
+//0.773 hit ratio
 //Assumes 8k sets, 64 byte lines and 2 ways per set
 
 //Index 0, Line 0
