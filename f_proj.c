@@ -509,7 +509,7 @@ void L1_read_or_write(uint8_t CPU_op, uint32_t tag, uint32_t address,
 	}/*end if*/
 	else {	/* In the cache already */
 		indexed_set->pseudo_LRU = update_LRU(tag_matched_line, indexed_set->pseudo_LRU);
-		CPU_operation(CPU_op, tag, &indexed_set->line[tag_matched_line]);
+		CPU_operation(CPU_op, address, &indexed_set->line[tag_matched_line]);
 		cache_hits++;
 	}/*end else*/
 
