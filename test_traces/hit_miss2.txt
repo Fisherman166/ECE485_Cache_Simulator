@@ -1,9 +1,9 @@
 //Checks hit/misses when an eviction happens
 //End of trace stats:
-//14 Reads
+//16 Reads
 //6 Writes
-//16 Hits
-//4 Misses
+//17 Hits
+//5 Misses
 //0.8 hit ratio
 //Assumes 8k sets, 64 byte lines and 2 ways per set
 
@@ -34,4 +34,8 @@
 2 0	//Read, hit
 2 0	//Read, hit
 1 0	//Write, hit
+
+//Read to different index
+0 800060
+2 800060
 
