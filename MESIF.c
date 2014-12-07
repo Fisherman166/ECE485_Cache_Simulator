@@ -195,7 +195,6 @@ void other_CPU_operation(uint8_t bus_op, uint32_t address, cache_line* line) {
 			if( bus_op == RWIM ) {
 				MESIF_state = INVALID;
 				snoop_result = HIT;
-				message_to_L2_cache(READ, address);	/* Update our value in cache before we forward */
 				bus_operation(WRITE, address, SNOOPING);
 				message_to_L2_cache(INVALIDATE, address);
 			}
@@ -207,7 +206,6 @@ void other_CPU_operation(uint8_t bus_op, uint32_t address, cache_line* line) {
 			else if( bus_op == READ ) {
 				MESIF_state = SHARED;
 				snoop_result = HIT;
-				message_to_L2_cache(READ, address);	/* Update our value in cache before we forward */
 				bus_operation(WRITE, address, SNOOPING);
 			}
 			break;
@@ -245,7 +243,7 @@ void other_CPU_operation(uint8_t bus_op, uint32_t address, cache_line* line) {
 			if( (bus_op == RWIM) || (bus_op == INVALIDATE) ) {
 				MESIF_state = INVALID;
 				snoop_result = HITM;
-				message_to_L2_cache(READ, address);	
+				/* Decode logic does a read to L2 already before writing to buffer */
 				bus_operation(WRITE, address, SNOOPING);
 				message_to_L2_cache(INVALIDATE, address);	
 			}

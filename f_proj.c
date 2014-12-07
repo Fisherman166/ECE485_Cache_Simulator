@@ -278,7 +278,8 @@ void decode_trace(uint8_t trace_op, uint32_t address) {
 					/* If line is modified, it must be put into the write buffer */
 					if(indexed_set->line[tag_matched_line].MESIF == MODIFIED) {
 						dirty_line_address |= (indexed_set->line[tag_matched_line].tag << (BYTE_SELECT_BITS + INDEX_BITS)) | (index << BYTE_SELECT_BITS);
-					add_to_write_buffer(dirty_line_address);
+						message_to_L2_cache(READ, dirty_line_address);
+						add_to_write_buffer(dirty_line_address);
 					}
 
 					other_CPU_operation(INVALIDATE, address, &indexed_set->line[tag_matched_line]);
@@ -300,6 +301,13 @@ void decode_trace(uint8_t trace_op, uint32_t address) {
 
 			case SNOOP_RWIM:
 				if(tag_matched_line != no_match) {
+					/* If line is modified, it must be put into the write buffer */
+					if(indexed_set->line[tag_matched_line].MESIF == MODIFIED) {
+						dirty_line_address |= (indexed_set->line[tag_matched_line].tag << (BYTE_SELECT_BITS + INDEX_BITS)) | (index << BYTE_SELECT_BITS);
+						message_to_L2_cache(READ, dirty_line_address);
+						add_to_write_buffer(dirty_line_address);
+					}
+
 					other_CPU_operation(RWIM, address, &indexed_set->line[tag_matched_line]);
 					indexed_set->valid_ways--;
 				}
