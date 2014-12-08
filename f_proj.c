@@ -138,6 +138,11 @@ int main (int argc, char * argv[])
 		exit(-3);
 	}
 
+	if(WAYS > 64) {
+		printf("Maximum number of allowed ways is 64. Exiting.\n");
+		exit(-4);
+	}
+
 	/* Round down the number of ways and sets if not a power of 2 */
 	inter_ways = log(WAYS) / log(2);
 	WAYS = pow(2, inter_ways);
