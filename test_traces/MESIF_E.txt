@@ -1,3 +1,9 @@
+// Assumes: 
+// 8k sets
+// 16 ways
+// 64 byte lines
+// test exhaustive exclusive MESIF State
+
 0 FFFFFFF8	//Read, I->E
 0 FFFFFFF8	//Read, NOHIT
 0 FFFFFFF7	//Read, HIT

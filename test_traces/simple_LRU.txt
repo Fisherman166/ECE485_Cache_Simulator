@@ -1,10 +1,14 @@
-//Use 8k sets, 16 ways in a set, and 64 byte lines
+//Assume:
+// 8k sets
+// 16 ways
+// 64 byte lines
 
-//This trace fills up all 16 indexes in a set in order.
+//This trace fills up all 16 indexes in one sets.
+//Single access in order to test basic operation.
 //Then it goes through and evicts all of the lines one at a time
 //If correct, all cache references should be misses.
 
-//In index 0 so it works for all set sizes
+//Fill all 16 ways in the set
 0 800000
 2 1000000
 0 1800000

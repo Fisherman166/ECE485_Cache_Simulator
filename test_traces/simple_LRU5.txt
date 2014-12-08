@@ -1,4 +1,12 @@
-// Fill 16 ways, less than cache sets 32k
+//Assume:
+// less than 32k sets
+// 16 ways
+// 64 byte lines
+
+//Simple test to ensure correct update of LRU bits. 
+//Fills the cache, then read all the even lines.
+// That should make initial evictions of all odds.
+// then evict evens
 
 0 800000
 2 1000000

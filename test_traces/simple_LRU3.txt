@@ -1,10 +1,14 @@
-// Trace is design to test a 16 way set 
+//Assume:
+// 2 sets
+// 16 ways
+// 64 byte lines
+
 // The trace fills up 8 indexes in a set in order.
-// Then access 2 from the first lines entered 
-// then it continous to fill the the cache then
+// Then access line 0 and then later on line 4
+// then it continues to fill the the cache then
 // begins to evict lines
 
-// In index 0 so it works for all set sizes
+// In index 0 
 0 800000
 2 1000000
 0 1800000
@@ -24,7 +28,7 @@
 // reads line 4 
 0 2800000
 
-// continue to fill the catche (from 11-15)
+// continue to fill the cache (from 11-15)
 2 6000000
 0 6800000
 2 7000000

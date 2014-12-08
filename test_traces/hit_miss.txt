@@ -1,3 +1,8 @@
+//Assumes: 
+// 8k sets
+// 16 ways
+// 64 byte lines
+
 //All operations to first index (index 0)
 //End of trace stats should print out:
 //18 Reads
@@ -5,7 +10,6 @@
 //20 Hits
 //5 Misses
 //0.8 hit ratio
-//Assumes 8k sets, 64 byte lines and 16 ways
 
 //Line 0
 0 0	//Read, miss

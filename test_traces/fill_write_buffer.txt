@@ -1,5 +1,9 @@
-//Use with a write buffer that only holds 1 item at a time to see if it will write back to DRAM when full
-//Use 2 sets, 2 ways and 64 byte lines for this test
+// Assumes: 
+// 2 sets
+// 2 ways
+// 64 byte lines
+// test write buffer that holds one item at the time.
+// ******* Don’t forget to modify code to ensure write buffer is size 1*************
 
 //Write two dirty lines to evict later
 1 1001	//Write

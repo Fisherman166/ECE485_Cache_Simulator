@@ -1,3 +1,9 @@
+// Assumes: 
+// 8k sets
+// 16 ways
+// 64 byte lines
+// test exhaustive invalid MESIF State
+
 3 02	//Snoop INV
 4 02	//Snoop read
 5 02	//Snoop write
