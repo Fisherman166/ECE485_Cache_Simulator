@@ -4,14 +4,14 @@
 // 64 byte lines
 // test exhaustive Modified MESIF State
 
-1 1640	//Write, I->M
+1 1640	//Write, 	I->M
 1 1640	//Write
 0 1640	//Read
 2 1640	//Read
 5 1640	//Snoop Write
-4 1640	//Snoop Read
-3 1640	//Snoop INV
-1 1640	//Write
-6 1640	//Snoop RWIM
-1 1641	//Write
-3 1641	//Snoop INV
+4 1640	//Snoop Read, 	M->S
+3 1640	//Snoop INV, 	S->I
+1 1640	//Write, 	I->M
+6 1640	//Snoop RWIM,	M->I
+1 1641	//Write, 	I->M
+3 1641	//Snoop INV,	M->I

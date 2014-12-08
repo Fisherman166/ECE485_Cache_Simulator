@@ -24,9 +24,9 @@
 
 //Re-read the line currently in the write buffer
 //Then print the write buffer to show the line has been written back to DRAM
-0 200A	//Read, HIT
-0 200A	//Read, HIT
-0 200A	//Read, HIT
+0 200A	//Read, HIT -> reads from write buffer
+0 200A	//Read, HIT -> reads from cache
+0 200A	//Read, HIT -> next 2 only to complete 5 operations.
 0 200A	//Read, HIT
 9			//Print cache and write buffer
 

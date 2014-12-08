@@ -4,17 +4,17 @@
 // 64 byte lines
 // test exhaustive exclusive MESIF State
 
-0 FFFFFFF8	//Read, I->E
+0 FFFFFFF8	//Read, 	I->E
 0 FFFFFFF8	//Read, NOHIT
 0 FFFFFFF7	//Read, HIT
 2 FFFFFFF9	//Read, HITM
 5 FFFFFFF9	//Snoop write
-1 FFFFFFF9	//Write, E->M
-3 FFFFFFF9	//Snoop Inv, M->I
-0 FFFFFFF8	//Read, I->E
-4 FFFFFFF0	//Snoop read, E->S
-3 FFFFFFF0	//Snoop inv, S->I
-0 FFFFFFF8	//Read, I->E
-3 FFFFFFF8	//Snoop inv, E->I
-0 FFFFFFF8	//Read, I->E
-6 FFFFFFF8	//Snoop RWIM, E->I
+1 FFFFFFF9	//Write, 	E->M
+3 FFFFFFF9	//Snoop Inv, 	M->I
+0 FFFFFFF8	//Read, 	I->E
+4 FFFFFFF0	//Snoop read, 	E->S
+3 FFFFFFF0	//Snoop inv, 	S->I
+0 FFFFFFF8	//Read, 	I->E
+3 FFFFFFF8	//Snoop inv, 	E->I
+0 FFFFFFF8	//Read, 	I->E
+6 FFFFFFF8	//Snoop RWIM, 	E->I

@@ -8,7 +8,7 @@
 // Then access first 7 lines already in the set.
 // Evict lines to ensure LRU works correctly
 
-// In index 0 so it works for all set sizes
+
 // fills cache 
 0 800000
 2 1000000
@@ -19,7 +19,7 @@
 0 3800000
 2 4000000
 
-// reads 0-6 leaving 7 as least recently used
+// reads 0-6 leaving 7 as true Last recently used
 // ensure line are updating correctly after initial store
 0 800000
 2 1000000

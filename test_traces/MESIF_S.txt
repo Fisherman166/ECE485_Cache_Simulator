@@ -4,17 +4,17 @@
 // 64 byte lines
 // test exhaustive Shared MESIF State
 
-0 00205001	//Read, I->F
-4 00205000	//Snoop READ, F->S
+0 00205001	//Read, 	I->F
+4 00205000	//Snoop READ, 	F->S
 2 00205000	//Read
 0 00205001	//Read
 4 00205000	//Snoop Read
 5 00205000	//Snoop write
-1 00205000	//Write, S->M
-3 00205000	//Snoop inv, M->I
-0 00205001	//Read, I->F
-4 00205000	//Snoop READ, F->S
-3 00205000	//Snoop inv, S->I
-0 00205001	//Read, I->F
-4 00205000	//Snoop READ, F->S
-6 00205000	//Snoop RWIM, S->I
+1 00205000	//Write, 	S->M
+3 00205000	//Snoop inv,	M->I
+0 00205001	//Read, 	I->F
+4 00205000	//Snoop READ, 	F->S
+3 00205000	//Snoop inv, 	S->I
+0 00205001	//Read, 	I->F
+4 00205000	//Snoop READ, 	F->S
+6 00205000	//Snoop RWIM,	S->I
